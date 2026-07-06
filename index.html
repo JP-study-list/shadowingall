@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日文 Shadowing 跟讀練習</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f5f3; --surface: #fff; --border: #e0e0e0;
+    --text: #1a1a1a; --text2: #666; --text3: #999;
+    --gold: #b8860b; --section: #888;
+  }
+  body.dark {
+    --bg: #111110; --surface: #1c1c1a; --border: #2e2e2b;
+    --text: #f0ede8; --text2: #a8a69e; --text3: #777;
+    --gold: #d4a94e; --section: #aaa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 40px 20px 60px;
+    transition: background .2s, color .2s;
+  }
+  .container { max-width: 760px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 36px; position: relative; }
+  header h1 { font-weight: 700; font-size: clamp(28px, 6vw, 42px); letter-spacing: 0.02em; }
+  header p { margin-top: 10px; color: var(--text2); font-size: 13px; }
+
+  .section { margin-bottom: 32px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    color: var(--section);
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .card {
+    display: block; text-decoration: none; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px; transition: transform .15s, border-color .15s;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--gold); }
+  .card-num {
+    font-size: 11px; font-weight: 600; color: var(--gold);
+    letter-spacing: 0.06em; margin-bottom: 4px; display: block;
+  }
+  .card-title { font-weight: 600; font-size: 16px; margin-bottom: 5px; line-height: 1.4; }
+  .card-sub { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+  footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text3); }
+
+  .toolbar { position: absolute; top: 0; right: 0; display: flex; gap: 8px; align-items: center; }
+  .tool-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .tool-btn:hover { border-color: var(--gold); color: var(--text); }
+  .tool-btn svg { display: block; }
+
+  /* List mode */
+  .grid.list-mode { grid-template-columns: 1fr; gap: 6px; }
+  .grid.list-mode .card { display: flex; align-items: center; gap: 14px; padding: 12px 18px; }
+  .grid.list-mode .card-num { margin-bottom: 0; flex-shrink: 0; width: 24px; }
+  .grid.list-mode .card-title { font-size: 14px; margin-bottom: 0; flex-shrink: 0; min-width: 130px; }
+  .grid.list-mode .card-sub { font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="toolbar">
+      <button class="tool-btn" onclick="toggleLayout()" title="切換顯示模式">
+        <svg id="icon-list" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg id="icon-grid" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+      </button>
+      <button class="tool-btn" onclick="toggleTheme()" title="切換深色模式">
+        <svg id="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <circle cx="12" cy="12" r="4"/>
+          <line x1="12" y1="2" x2="12" y2="5"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+          <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+          <line x1="2" y1="12" x2="5" y2="12"/>
+          <line x1="19" y1="12" x2="22" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+          <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+    <h1>日文 Shadowing 跟讀練習</h1>
+    <p>點選課程，前往對應的跟讀練習頁面</p>
+  </header>
+
+  <!-- Part 1 -->
+  <div class="section">
+    <div class="section-label">PART 1 ── 日劇般的情緒表達</div>
+    <div class="grid">
+      <a class="card" href="./lesson1.html">
+        <span class="card-num">01</span>
+        <div class="card-title">期待・雀躍・興奮</div>
+        <div class="card-sub">心情雀躍、滿懷期待時的語感練習</div>
+      </a>
+      <a class="card" href="./lesson2.html">
+        <span class="card-num">02</span>
+        <div class="card-title">猶豫・不確定・回想</div>
+        <div class="card-sub">拿不定主意與回憶過往情境的練習</div>
+      </a>
+      <a class="card" href="./lesson3.html">
+        <span class="card-num">03</span>
+        <div class="card-title">身體不舒服・心裡不舒服</div>
+        <div class="card-sub">身心不適、抱怨狀況時的語感練習</div>
+      </a>
+      <a class="card" href="./lesson4.html">
+        <span class="card-num">04</span>
+        <div class="card-title">玩笑・裝傻・揶揄</div>
+        <div class="card-sub">開玩笑、耍寶吐槽的輕鬆語氣練習</div>
+      </a>
+      <a class="card" href="./lesson5.html">
+        <span class="card-num">05</span>
+        <div class="card-title">安慰・商量・建議</div>
+        <div class="card-sub">傾聽同理與給予建議情境的練習</div>
+      </a>
+      <a class="card" href="./lesson6.html">
+        <span class="card-num">06</span>
+        <div class="card-title">讚美・回應讚美</div>
+        <div class="card-sub">稱讚他人與謙虛回應時的語感練習</div>
+      </a>
+      <a class="card" href="./lesson7.html">
+        <span class="card-num">07</span>
+        <div class="card-title">生氣・不耐煩・抱怨</div>
+        <div class="card-sub">意見不合、表達不滿情境的練習</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Part 2 -->
+  <div class="section">
+    <div class="section-label">PART 2 ── 旅行 &amp; 服務業用語</div>
+    <div class="grid">
+      <a class="card" href="./lesson8.html">
+        <span class="card-num">08</span>
+        <div class="card-title">旅行中的巧遇・計畫</div>
+        <div class="card-sub">旅途中偶遇與排定行程的會話練習</div>
+      </a>
+      <a class="card" href="./lesson9.html">
+        <span class="card-num">09</span>
+        <div class="card-title">旅行中的美景・美食</div>
+        <div class="card-sub">讚嘆風景與品嚐美食時的語感練習</div>
+      </a>
+      <a class="card" href="./lesson10.html">
+        <span class="card-num">10</span>
+        <div class="card-title">旅行中的突發狀況</div>
+        <div class="card-sub">遇到麻煩、緊急應對情境的練習</div>
+      </a>
+      <a class="card" href="./lesson11.html">
+        <span class="card-num">11</span>
+        <div class="card-title">旅行的好壞心情</div>
+        <div class="card-sub">旅途中開心與失落情緒的語感練習</div>
+      </a>
+      <a class="card" href="./lesson12.html">
+        <span class="card-num">12</span>
+        <div class="card-title">旅遊零售業</div>
+        <div class="card-sub">購物詢價、試用與結帳的會話練習</div>
+      </a>
+      <a class="card" href="./lesson13.html">
+        <span class="card-num">13</span>
+        <div class="card-title">旅遊餐飲業</div>
+        <div class="card-sub">餐廳點餐、詢問與用餐的會話練習</div>
+      </a>
+      <a class="card" href="./lesson14.html">
+        <span class="card-num">14</span>
+        <div class="card-title">旅遊住宿業</div>
+        <div class="card-sub">飯店入住、退房與設施詢問練習</div>
+      </a>
+      <a class="card" href="./lesson15.html">
+        <span class="card-num">15</span>
+        <div class="card-title">旅遊交通業</div>
+        <div class="card-sub">搭車問路與交通指引的會話練習</div>
+      </a>
+      <a class="card" href="./lesson16.html">
+        <span class="card-num">16</span>
+        <div class="card-title">機場・巴士・地鐵・廣播</div>
+        <div class="card-sub">交通設施廣播與指示用語的練習</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Part 3 -->
+  <div class="section">
+    <div class="section-label">PART 3 ── 日本人的生活日常</div>
+    <div class="grid">
+      <a class="card" href="./lesson17.html">
+        <span class="card-num">17</span>
+        <div class="card-title">家庭生活・夫妻・親子</div>
+        <div class="card-sub">家人之間日常對話的語感練習</div>
+      </a>
+      <a class="card" href="./lesson18.html">
+        <span class="card-num">18</span>
+        <div class="card-title">與鄰居的日常</div>
+        <div class="card-sub">鄰里打招呼與寒暄的會話練習</div>
+      </a>
+      <a class="card" href="./lesson19.html">
+        <span class="card-num">19</span>
+        <div class="card-title">學校師生間</div>
+        <div class="card-sub">師生對話與學校場合的語感練習</div>
+      </a>
+      <a class="card" href="./lesson20.html">
+        <span class="card-num">20</span>
+        <div class="card-title">學校同學間</div>
+        <div class="card-sub">同學互動、討論與玩笑的會話練習</div>
+      </a>
+      <a class="card" href="./lesson21.html">
+        <span class="card-num">21</span>
+        <div class="card-title">結交新朋友</div>
+        <div class="card-sub">初次見面與自我介紹的語感練習</div>
+      </a>
+      <a class="card" href="./lesson22.html">
+        <span class="card-num">22</span>
+        <div class="card-title">送禮・拜訪老友</div>
+        <div class="card-sub">拜訪與贈禮場合常用表達的練習</div>
+      </a>
+      <a class="card" href="./lesson23.html">
+        <span class="card-num">23</span>
+        <div class="card-title">職場和同事互動</div>
+        <div class="card-sub">辦公室同事間日常對話的語感練習</div>
+      </a>
+      <a class="card" href="./lesson24.html">
+        <span class="card-num">24</span>
+        <div class="card-title">職場和客戶互動</div>
+        <div class="card-sub">商務往來與接待客戶的敬語練習</div>
+      </a>
+      <a class="card" href="./lesson25.html">
+        <span class="card-num">25</span>
+        <div class="card-title">會議・簡報・主持</div>
+        <div class="card-sub">開會發言與簡報主持的正式用語練習</div>
+      </a>
+    </div>
+  </div>
+
+  <footer>持續更新中</footer>
+</div>
+
+<script>
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  document.getElementById('icon-moon').style.display = dark ? 'none' : '';
+  document.getElementById('icon-sun').style.display = dark ? '' : 'none';
+  localStorage.setItem('shadowing-dark', dark ? '1' : '0');
+}
+function toggleLayout() {
+  const grids = document.querySelectorAll('.grid');
+  const isList = !grids[0].classList.contains('list-mode');
+  grids.forEach(g => g.classList.toggle('list-mode', isList));
+  document.getElementById('icon-list').style.display = isList ? '' : 'none';
+  document.getElementById('icon-grid').style.display = isList ? 'none' : '';
+  localStorage.setItem('shadowing-layout', isList ? 'list' : 'grid');
+}
+// Init
+if (localStorage.getItem('shadowing-dark') === '1') {
+  document.body.classList.add('dark');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('icon-moon').style.display = 'none';
+    document.getElementById('icon-sun').style.display = '';
+  });
+}
+if (localStorage.getItem('shadowing-layout') === 'list') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.grid').forEach(g => g.classList.add('list-mode'));
+    document.getElementById('icon-list').style.display = '';
+    document.getElementById('icon-grid').style.display = 'none';
+  });
+}
+</script>
+</body>
+</html>
