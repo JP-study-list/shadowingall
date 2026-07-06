@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowing Practice 5</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --ink: #1a1a2e; --paper: #f7f5f0; --accent: #4a6fa5;
+    --accent-light: #e8eef7; --muted: #8a8a9a; --border: #dddbd4;
+    --card: #ffffff; --a-color: #2d6a4f; --b-color: #6b3fa0;
+    --a-bg: #eaf4ee; --b-bg: #f2ecfb; --speed-bg: #fafaf8;
+  }
+  [data-theme="dark"] {
+    --ink: #e8e6e1; --paper: #141418; --accent: #6b9fd4;
+    --accent-light: #1e2a38; --muted: #666672; --border: #2e2e38;
+    --card: #1e1e26; --a-color: #5bbf85; --b-color: #b07ee8;
+    --a-bg: #1a2e22; --b-bg: #251a35; --speed-bg: #191920;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; padding: 1.5rem 1rem 4rem; transition: background 0.2s, color 0.2s; }
+  header { max-width: 660px; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .site-title { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 500; letter-spacing: 0.08em; color: var(--ink); text-transform: uppercase; }
+  .dark-toggle { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .dark-toggle svg { width: 16px; height: 16px; }
+  .dark-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .lessons { max-width: 660px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .lesson-card { background: var(--card); border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; transition: box-shadow 0.2s, background 0.2s, border-color 0.2s; }
+  .lesson-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .lesson-header { padding: 0.55rem 1rem 0.55rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .header-right-btns { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .lesson-num { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+  .bookmark-btn { width: 22px; height: 22px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--border); transition: color 0.15s, transform 0.1s; flex-shrink: 0; }
+  .bookmark-btn:hover { color: var(--muted); transform: scale(1.1); }
+  .bookmark-btn.marked { color: #e53935; }
+  .bookmark-btn svg { width: 14px; height: 18px; }
+  .mini-btn { font-family: 'Noto Sans JP', sans-serif; font-size: 0.63rem; padding: 0.15rem 0.45rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mini-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .play-all-btn { display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.22rem 0.65rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .play-all-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn.playing { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn svg { width: 9px; height: 9px; flex-shrink: 0; }
+  .utterances { display: flex; flex-direction: column; }
+  .utterance { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .utterance:last-child { border-bottom: none; }
+  .utterance.is-playing { background: var(--accent-light); }
+  .speaker-badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; margin-top: 0.15rem; }
+  .speaker-A .speaker-badge { background: var(--a-bg); color: var(--a-color); }
+  .speaker-B .speaker-badge { background: var(--b-bg); color: var(--b-color); }
+  .text-area { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+  .utterance-text { font-size: 0.95rem; line-height: 1.6; transition: opacity 0.25s, filter 0.25s; }
+  .utterance-text.hidden { opacity: 0; filter: blur(6px); pointer-events: none; user-select: none; }
+  .sub-text { font-size: 0.8rem; line-height: 1.5; color: var(--muted); display: none; }
+  .sub-text.visible { display: block; }
+  ruby { ruby-align: center; }
+  rt { font-size: 0.55em; color: var(--muted); }
+  .play-btn { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: var(--accent-light); color: var(--accent); margin-top: 0.05rem; }
+  .play-btn:hover { background: var(--accent); color: #fff; transform: scale(1.05); }
+  .play-btn.playing { background: var(--accent); color: #fff; }
+  .play-btn svg { width: 15px; height: 15px; }
+  .speed-controls { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem; border-top: 1px solid var(--border); background: var(--speed-bg); transition: background 0.2s; flex-wrap: wrap; }
+  .speed-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-right: 0.2rem; }
+  .speed-btn { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.18rem 0.45rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .speed-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .repeat-btn { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .repeat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .grammar-block { border-top: 1px solid var(--border); background: var(--speed-bg); overflow: hidden; max-height: 0; transition: max-height 0.35s ease; }
+  .grammar-block.open { max-height: 3000px; }
+  .grammar-inner { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; }
+  .grammar-sentence { display: flex; flex-direction: column; gap: 0.5rem; }
+  .grammar-sentence-label { font-size: 0.75rem; font-family: 'DM Mono', monospace; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  .grammar-item { display: flex; flex-direction: column; gap: 0.15rem; }
+  .grammar-term { font-size: 0.88rem; font-weight: 700; color: var(--accent); }
+  .grammar-desc { font-size: 0.82rem; line-height: 1.65; color: var(--ink); }
+  .grammar-btn { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .grammar-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <span class="site-title">Shadowing 5</span>
+    <span style="font-size:0.72rem;color:var(--muted);font-family:'Noto Sans JP',sans-serif;">共感・相談</span>
+  </div>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="切換深色模式">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+<div class="lessons" id="lessons"></div>
+<script>
+const data = [
+  {
+    id: "5-1",
+    utterances: [
+      { speaker: "A", text: "さっきのテスト、答えはわかってたのに、時間がなくて書き切れなかった。時間配分って難しいよね。",
+        furigana: "さっきの<ruby>テスト<rt>てすと</rt></ruby>、<ruby>答<rt>こた</rt></ruby>えはわかってたのに、<ruby>時間<rt>じかん</rt></ruby>がなくて<ruby>書<rt>か</rt></ruby>き<ruby>切<rt>き</rt></ruby>れなかった。<ruby>時間配分<rt>じかんはいぶん</rt></ruby>って<ruby>難<rt>むずか</rt></ruby>しいよね。",
+        chinese: "剛才的考試，我明明知道答案，卻因為沒時間沒寫完。時間分配真的好難啊。",
+        audio: "audio/05-01_1.mp3",
+        grammar: [
+          { term: "わかってたのに", desc: "「わかっていたのに」的口語縮短形。「のに」是逆接，表示「明明〜卻〜」，帶有強烈的遺憾或不滿情緒。這裡是「明明知道答案卻沒寫完」的懊悔。" },
+          { term: "書き切れなかった", desc: "「書き切る（寫完）」＋可能否定過去形「〜れなかった」，表示「沒能寫完」。「〜切る」接在動詞連用形後，表示「徹底做完某事」。" },
+          { term: "時間配分って難しい", desc: "「〜って」是「〜というのは」的口語縮短，用於提出話題。「時間配分って難しい」是「時間分配這件事真的很難」，「よね」尋求對方共鳴。" }
+        ]
+      },
+      { speaker: "B", text: "わかる、わかる",
+        furigana: "わかる、わかる",
+        chinese: "懂懂，真的懂。",
+        audio: "audio/05-01_2.mp3",
+        grammar: [
+          { term: "わかる、わかる", desc: "重複動詞表示強烈共鳴，相當於「懂懂、真的懂」。是日語中表達共感的典型說法，比說一次更顯得真誠投入。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-2",
+    utterances: [
+      { speaker: "A", text: "勇気を振り絞って告白したけど、ふられちゃったよ",
+        furigana: "<ruby>勇気<rt>ゆうき</rt></ruby>を<ruby>振<rt>ふ</rt></ruby>り<ruby>絞<rt>しぼ</rt></ruby>って<ruby>告白<rt>こくはく</rt></ruby>したけど、ふられちゃったよ",
+        chinese: "我鼓起勇氣告白了，但被拒絕了。",
+        audio: "audio/05-02_1.mp3",
+        grammar: [
+          { term: "勇気を振り絞る", desc: "慣用語，字面是「把勇氣擰出來」，表示「拼命鼓起勇氣、使出渾身勇氣」。強調這個行動需要極大的心理能量。" },
+          { term: "ふられちゃった", desc: "「振られる（被拒絕）」＋「〜てしまった」的口語縮短「〜ちゃった」，表示「（不幸地）被拒絕了」。「ちゃった」帶有遺憾或無奈的語氣。" }
+        ]
+      },
+      { speaker: "B", text: "そっか。飲みに行こう!今日は朝まで付き合うよ",
+        furigana: "そっか。<ruby>飲<rt>の</rt></ruby>みに<ruby>行<rt>い</rt></ruby>こう！<ruby>今日<rt>きょう</rt></ruby>は<ruby>朝<rt>あさ</rt></ruby>まで<ruby>付<rt>つ</rt></ruby>き<ruby>合<rt>あ</rt></ruby>うよ",
+        chinese: "這樣啊。去喝一杯吧！今天陪你喝到天亮。",
+        audio: "audio/05-02_2.mp3",
+        grammar: [
+          { term: "そっか", desc: "「そうか」的口語縮短形，表示「這樣啊、原來如此」。語調平穩帶有接受和理解的語氣，是聽到壞消息時先給對方安慰空間的自然回應。" },
+          { term: "朝まで付き合う", desc: "「付き合う」表示「陪伴、奉陪」，「朝まで」表示「到天亮為止」。整句是「今晚陪你喝到天亮」，展現朋友間的義氣與支持。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-3",
+    utterances: [
+      { speaker: "A", text: "リハではうまくいったのに、本番で台詞かんじゃったよ",
+        furigana: "リハではうまくいったのに、<ruby>本番<rt>ほんばん</rt></ruby>で<ruby>台詞<rt>せりふ</rt></ruby>かんじゃったよ",
+        chinese: "排練的時候明明很順，正式上場卻忘詞了。",
+        audio: "audio/05-03_1.mp3",
+        grammar: [
+          { term: "リハ", desc: "「リハーサル（rehearsal）」的縮短形，表示「排練、彩排」。日語中常將外來語縮短使用，如「リモート→リモ」「パソコン→PC」。" },
+          { term: "うまくいったのに", desc: "「うまくいく（進行順利）」的過去形＋「のに（明明〜卻）」，表示遺憾的對比：排練明明很順，正式卻失敗了。" },
+          { term: "台詞をかむ", desc: "「かむ」原意是「咬」，口語中「台詞をかむ」表示「說話結巴、忘詞」，是演員或主持人說話不順暢的慣用說法。「かんじゃった」是「かんでしまった」的縮短口語形。" }
+        ]
+      },
+      { speaker: "B", text: "えっ？そう？わからなかったけど",
+        furigana: "えっ？そう？わからなかったけど",
+        chinese: "欸？真的？我完全沒發現耶。",
+        audio: "audio/05-03_2.mp3",
+        grammar: [
+          { term: "わからなかったけど", desc: "「けど」是逆接，但這裡後半省略，意思是「我完全沒發現（所以你不用太在意）」。省略後半讓語氣更柔和，帶有安慰的效果。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-4",
+    utterances: [
+      { speaker: "A", text: "仕事が遅くて、みんなに迷惑かけて本当に申し訳ないと思ってる",
+        furigana: "<ruby>仕事<rt>しごと</rt></ruby>が<ruby>遅<rt>おそ</rt></ruby>くて、みんなに<ruby>迷惑<rt>めいわく</rt></ruby>かけて<ruby>本当<rt>ほんとう</rt></ruby>に<ruby>申<rt>もう</rt></ruby>し<ruby>訳<rt>わけ</rt></ruby>ないと<ruby>思<rt>おも</rt></ruby>ってる",
+        chinese: "我工作太慢，給大家添麻煩，真的非常抱歉。",
+        audio: "audio/05-04_1.mp3",
+        grammar: [
+          { term: "迷惑をかける", desc: "固定表現，表示「給人添麻煩」。「迷惑」是「麻煩、困擾」，「かける」有「施加」的意思。是日語中表達歉意時非常常用的說法。" },
+          { term: "申し訳ない", desc: "正式的道歉表現，字面是「沒有辯解的餘地」，表示「非常抱歉、深感歉意」。比「すみません」更鄭重，常用於真誠道歉的場合。" }
+        ]
+      },
+      { speaker: "B", text: "計画立ててやってみるとか、できないと思ったら、できるだけ早く声かけてもらえると助かるかな",
+        furigana: "<ruby>計画<rt>けいかく</rt></ruby><ruby>立<rt>た</rt></ruby>ててやってみるとか、できないと<ruby>思<rt>おも</rt></ruby>ったら、できるだけ<ruby>早<rt>はや</rt></ruby>く<ruby>声<rt>こえ</rt></ruby>かけてもらえると<ruby>助<rt>たす</rt></ruby>かるかな",
+        chinese: "比如說先擬定計畫再做，或是覺得做不到的話，盡量早點跟我說，這樣會很有幫助。",
+        audio: "audio/05-04_2.mp3",
+        grammar: [
+          { term: "〜てみるとか", desc: "「〜てみる（試著做）」＋「とか（之類的）」，用於列舉建議，語氣比較柔和，不像命令，帶有「例如這樣做也可以」的感覺。" },
+          { term: "声をかける", desc: "慣用語，表示「開口說話、打招呼、告知」，這裡是「盡早告訴我（做不到）」的意思。比「言う」更有主動聯絡的含意。" },
+          { term: "〜てもらえると助かる", desc: "「〜てもらえる」是請求的間接說法，「助かる」表示「（對我）有幫助」。整體是非常禮貌且不強迫的請求方式，常用於職場溝通。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-5",
+    utterances: [
+      { speaker: "A", text: "最近、残業が多いと思わない",
+        furigana: "<ruby>最近<rt>さいきん</rt></ruby>、<ruby>残業<rt>ざんぎょう</rt></ruby>が<ruby>多<rt>おお</rt></ruby>いと<ruby>思<rt>おも</rt></ruby>わない",
+        chinese: "你不覺得最近加班很多嗎？",
+        audio: "audio/05-05_1.mp3",
+        grammar: [
+          { term: "〜と思わない？", desc: "「〜と思う（認為〜）」的否定疑問形，用於尋求對方同意，相當於「你不覺得〜嗎？」。比直接說「〜だよね」更想確認對方是否有同感。" }
+        ]
+      },
+      { speaker: "B", text: "うん、うん。でも、残業代が出るだけましだよ",
+        furigana: "うん、うん。でも、<ruby>残業代<rt>ざんぎょうだい</rt></ruby>が<ruby>出<rt>で</rt></ruby>るだけましだよ",
+        chinese: "嗯嗯。不過，至少還有加班費，這樣算好的了。",
+        audio: "audio/05-05_2.mp3",
+        grammar: [
+          { term: "〜だけまし", desc: "「まし」表示「相對來說還好、比較好」，「〜だけまし」是「至少還有〜，這樣算好的了」的固定說法。用於在抱怨中找到正面之處，帶有自我安慰的語氣。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-6",
+    utterances: [
+      { speaker: "A", text: "恵まれてる貴方に、私の気持ちなんてわかるわけないよね",
+        furigana: "<ruby>恵<rt>めぐ</rt></ruby>まれてる<ruby>貴方<rt>あなた</rt></ruby>に、<ruby>私<rt>わたし</rt></ruby>の<ruby>気持<rt>きも</rt></ruby>ちなんてわかるわけないよね",
+        chinese: "你這個這麼幸運的人，根本不可能懂我的感受吧。",
+        audio: "audio/05-06_1.mp3",
+        grammar: [
+          { term: "恵まれている", desc: "「恵まれる」是「被賜予、受到恩惠」的被動形，表示「環境好、條件優越、幸運」。「恵まれてる」是口語縮短形。" },
+          { term: "〜なんて", desc: "帶有輕視或否定語氣的助詞，表示「〜之類的、才不〜呢」。「私の気持ちなんて」暗示「我的感受這種東西（你不會懂的）」，帶有自我貶低或對對方的挑戰。" },
+          { term: "わかるわけない", desc: "「〜わけがない」表示「不可能〜、絕對不〜」，是強烈否定的固定說法。「わかるわけない」是「根本不可能懂」，語氣強烈且帶有情緒。" }
+        ]
+      },
+      { speaker: "B", text: "うーん、恵まれてると言われれば、それはそうなんだけど、つらい気持ちはわかるよ",
+        furigana: "うーん、<ruby>恵<rt>めぐ</rt></ruby>まれてると<ruby>言<rt>い</rt></ruby>われれば、それはそうなんだけど、つらい<ruby>気持<rt>きも</rt></ruby>ちはわかるよ",
+        chinese: "嗯⋯⋯說我幸運的話，那確實是這樣沒錯，但我懂那種痛苦的感受。",
+        audio: "audio/05-06_2.mp3",
+        grammar: [
+          { term: "〜と言われれば", desc: "「〜と言う」的被動假定形，表示「如果說〜的話、被這樣說的話」，用於接受對方的說法但想進一步說明，語氣謙遜而不防禦。" },
+          { term: "それはそうなんだけど", desc: "「それはそう（確實如此）」＋「なんだけど（但是）」，表示「那一點我承認，但是……」，是在接受批評的同時試圖補充說明的說法。" },
+          { term: "つらい気持ちはわかる", desc: "「は」用於對比，強調「雖然我不一定有相同的經歷，但痛苦的心情這一點我能理解」。是表達共感而不是辯解的關鍵句。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-7",
+    utterances: [
+      { speaker: "A", text: "初めてお客様にメールを書くんですが、敬語の使い方がわからなくて。",
+        furigana: "<ruby>初<rt>はじ</rt></ruby>めてお<ruby>客様<rt>きゃくさま</rt></ruby>にメールを<ruby>書<rt>か</rt></ruby>くんですが、<ruby>敬語<rt>けいご</rt></ruby>の<ruby>使<rt>つか</rt></ruby>い<ruby>方<rt>かた</rt></ruby>がわからなくて。",
+        chinese: "我第一次要寫信給客戶，但不太清楚敬語的用法。",
+        audio: "audio/05-07_1.mp3",
+        grammar: [
+          { term: "〜んですが", desc: "「〜のですが」的口語形，用於說明背景情況後提出請求或問題，相當於「其實是這樣的……」。後半省略了「教えてもらえますか」等請求，讓語氣更柔和含蓄。" },
+          { term: "わからなくて", desc: "「わからない」的て形，表示原因，後半省略。「〜なくて（困っています）」是日語中表達困擾時常見的省略說法，讓聽者自然理解說話者需要幫助。" }
+        ]
+      },
+      { speaker: "B", text: "こっちに見本があるから、参考にしてみて",
+        furigana: "こっちに<ruby>見本<rt>みほん</rt></ruby>があるから、<ruby>参考<rt>さんこう</rt></ruby>にしてみて",
+        chinese: "這裡有範本，你可以參考看看。",
+        audio: "audio/05-07_2.mp3",
+        grammar: [
+          { term: "参考にする", desc: "表示「參考、作為參考」，「にする」是「把〜當作〜」的用法。「参考にしてみて」是「試著參考看看」，「みて」是「〜てみてください」的口語省略形。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-8",
+    utterances: [
+      { speaker: "A", text: "今の会社、人間関係はいいから、ずっとここで働きたいけど、仕事が毎日同じことの繰り返しでつまらないんだよね。転職した方がいいかな？でも、資格もないしな。どうすればいい？",
+        furigana: "<ruby>今<rt>いま</rt></ruby>の<ruby>会社<rt>かいしゃ</rt></ruby>、<ruby>人間関係<rt>にんげんかんけい</rt></ruby>はいいから、ずっとここで<ruby>働<rt>はたら</rt></ruby>きたいけど、<ruby>仕事<rt>しごと</rt></ruby>が<ruby>毎日<rt>まいにち</rt></ruby><ruby>同<rt>おな</rt></ruby>じことの<ruby>繰<rt>く</rt></ruby>り<ruby>返<rt>かえ</rt></ruby>しでつまらないんだよね。<ruby>転職<rt>てんしょく</rt></ruby>した<ruby>方<rt>ほう</rt></ruby>がいいかな？でも、<ruby>資格<rt>しかく</rt></ruby>もないしな。どうすればいい？",
+        chinese: "現在這家公司人際關係很好，所以想一直待下去，但工作每天都是重複同樣的事，好無聊。要換工作嗎？但又沒有什麼資格證照。怎麼辦才好？",
+        audio: "audio/05-08_1.mp3",
+        grammar: [
+          { term: "同じことの繰り返し", desc: "「繰り返し」表示「重複、反覆」，「同じことの繰り返し」是「每天重複同樣的事」，用於描述單調無聊的日常，是常見的抱怨說法。" },
+          { term: "転職した方がいいかな", desc: "「〜した方がいい」表示「最好〜、應該〜」，「かな」是自我疑問語氣，表示說話者在自言自語地猶豫，不是在問對方。" },
+          { term: "〜もないしな", desc: "「し」用於列舉理由，「な」是自我感嘆語氣助詞。「資格もないしな」是「又沒有資格證照（所以難辦）」，帶有自我嘀咕的語氣。" }
+        ]
+      },
+      { speaker: "B", text: "自分にとって何が一番大事かを考えてみるのはどう？",
+        furigana: "<ruby>自分<rt>じぶん</rt></ruby>にとって<ruby>何<rt>なに</rt></ruby>が<ruby>一番<rt>いちばん</rt></ruby><ruby>大事<rt>だいじ</rt></ruby>かを<ruby>考<rt>かんが</rt></ruby>えてみるのはどう？",
+        chinese: "試著想想看對自己來說什麼最重要，怎麼樣？",
+        audio: "audio/05-08_2.mp3",
+        grammar: [
+          { term: "自分にとって", desc: "「にとって」表示「對〜來說、從〜的角度」，強調以說話對象為主體來思考，是建議或分析時常用的表現。" },
+          { term: "〜かを考えてみる", desc: "「〜か」將疑問詞子句名詞化，「を考える」表示思考這件事，「みる」帶有「試著」的語氣。整句是「試著思考〜是什麼」。" },
+          { term: "〜のはどう？", desc: "「〜のはどう？」是提出建議的柔和說法，相當於「〜怎麼樣？」。比「〜しなさい」或「〜した方がいい」更尊重對方的選擇，常用於朋友間的建議。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-9",
+    utterances: [
+      { speaker: "A", text: "最近、うちの近くをうろうろしてる犬がいるんだけど、どうやって保護したらいいかな。",
+        furigana: "<ruby>最近<rt>さいきん</rt></ruby>、うちの<ruby>近<rt>ちか</rt></ruby>くをうろうろしてる<ruby>犬<rt>いぬ</rt></ruby>がいるんだけど、どうやって<ruby>保護<rt>ほご</rt></ruby>したらいいかな。",
+        chinese: "最近附近一直有一隻狗在晃，要怎麼保護牠才好呢？",
+        audio: "audio/05-09_1.mp3",
+        grammar: [
+          { term: "うろうろする", desc: "擬態語，表示「到處晃悠、徘徊」，帶有沒有目的地來回走動的感覺。常用於人或動物在某處來回出現的情況。" },
+          { term: "どうやって〜したらいいかな", desc: "「どうやって」表示「怎麼做、用什麼方法」，「〜したらいい」表示「最好怎麼做」，「かな」是自問語氣。整句是在向對方徵詢具體方法的說法。" }
+        ]
+      },
+      { speaker: "B", text: "首輪やリードがついてる？",
+        furigana: "<ruby>首輪<rt>くびわ</rt></ruby>やリードがついてる？",
+        chinese: "有戴項圈或牽繩嗎？",
+        audio: "audio/05-09_2.mp3",
+        grammar: [
+          { term: "〜がついてる？", desc: "「ついている」表示「附著、帶有」，「てる」是口語縮短形。這是為了判斷是有主人的狗還是流浪狗而確認的問題，展現出對話中的邏輯推進。" }
+        ]
+      },
+      { speaker: "A", text: "ううん",
+        furigana: "ううん",
+        chinese: "沒有。",
+        audio: "audio/05-09_3.mp3",
+        grammar: [
+          { term: "ううん", desc: "口語的否定回應，表示「不、沒有」。注意與表示肯定的「うん」區別，「ううん」音調下降，「うん」音調上升或平穩。" }
+        ]
+      },
+      { speaker: "B", text: "じゃ、迷い犬か野良犬かわからないから、自分で保護するのは難しいかも。動物保護団体に相談してみたらどうかな",
+        furigana: "じゃ、<ruby>迷<rt>まよ</rt></ruby>い<ruby>犬<rt>いぬ</rt></ruby>か<ruby>野良犬<rt>のらいぬ</rt></ruby>かわからないから、<ruby>自分<rt>じぶん</rt></ruby>で<ruby>保護<rt>ほご</rt></ruby>するのは<ruby>難<rt>むずか</rt></ruby>しいかも。<ruby>動物保護団体<rt>どうぶつほごだんたい</rt></ruby>に<ruby>相談<rt>そうだん</rt></ruby>してみたらどうかな",
+        chinese: "那樣的話，不知道是迷路的狗還是流浪狗，自己保護可能有點困難。要不要試試去找動物保護團體諮詢看看？",
+        audio: "audio/05-09_4.mp3",
+        grammar: [
+          { term: "迷い犬か野良犬かわからない", desc: "「〜か〜かわからない」表示「不知道是〜還是〜」，用於列舉兩種可能性都不確定的情況。" },
+          { term: "〜かも", desc: "「〜かもしれない（也許〜）」的口語縮短形，表示不確定的推測。語氣比直接說「難しい」更柔和，不那麼武斷。" },
+          { term: "相談してみたらどうかな", desc: "「〜してみたら」是「試著做了之後（怎樣）」的假定形，「どうかな」是「怎麼樣呢」的自問語氣。整句是柔和提出建議的說法，不帶強迫感。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "5-10",
+    utterances: [
+      { speaker: "A", text: "部下が言われたことしかやらないんですが、どうしたらやる気を持ってもらえますか",
+        furigana: "<ruby>部下<rt>ぶか</rt></ruby>が<ruby>言<rt>い</rt></ruby>われたことしかやらないんですが、どうしたらやる<ruby>気<rt>き</rt></ruby>を<ruby>持<rt>も</rt></ruby>ってもらえますか",
+        chinese: "我的下屬只做被吩咐的事，要怎麼做才能讓他們有幹勁呢？",
+        audio: "audio/05-10_1.mp3",
+        grammar: [
+          { term: "言われたことしかやらない", desc: "「〜しかやらない」表示「只做〜、除了〜什麼都不做」，帶有批評或不滿的語氣。「言われたこと」是「被說的事、被吩咐的事」，指被動地執行指示。" },
+          { term: "やる気を持ってもらえますか", desc: "「やる気（幹勁）を持つ」是「有幹勁」，「〜てもらえますか」是請求的禮貌說法，但這裡是詢問「怎樣才能讓對方有幹勁」，帶有間接請求建議的語氣。" }
+        ]
+      },
+      { speaker: "B", text: "上司自身がチームの目標を設定して、頑張ることです。成長や成功はチームで作るものですから、上司が率先する姿を見せれば、部下もついてきてくれるのではないでしょうか。",
+        furigana: "<ruby>上司<rt>じょうし</rt></ruby><ruby>自身<rt>じしん</rt></ruby>がチームの<ruby>目標<rt>もくひょう</rt></ruby>を<ruby>設定<rt>せってい</rt></ruby>して、<ruby>頑張<rt>がんば</rt></ruby>ることです。<ruby>成長<rt>せいちょう</rt></ruby>や<ruby>成功<rt>せいこう</rt></ruby>はチームで<ruby>作<rt>つく</rt></ruby>るものですから、<ruby>上司<rt>じょうし</rt></ruby>が<ruby>率先<rt>そっせん</rt></ruby>する<ruby>姿<rt>すがた</rt></ruby>を<ruby>見<rt>み</rt></ruby>せれば、<ruby>部下<rt>ぶか</rt></ruby>もついてきてくれるのではないでしょうか。",
+        chinese: "重要的是上司自己要為團隊設定目標並努力。因為成長和成功是由整個團隊共同創造的，如果上司能帶頭示範，下屬自然也會跟上來的。",
+        audio: "audio/05-10_2.mp3",
+        grammar: [
+          { term: "〜ことです", desc: "「〜ことです」用於說明重要事項或建議，相當於「重要的是〜」。是正式場合中給出建議或結論的常見說法，語氣肯定而不失禮貌。" },
+          { term: "〜ものですから", desc: "「〜ものだから」的正式形，表示理由，語氣比「から」或「ので」更正式，帶有說明的語氣，常用於正式的說明或演講場合。" },
+          { term: "率先する姿を見せる", desc: "「率先する（帶頭、率先）」＋「姿（樣子、身姿）」＋「見せる（展示）」，意思是「展現帶頭努力的樣子」。強調上司以身作則的重要性。" },
+          { term: "〜のではないでしょうか", desc: "委婉的推測表現，表示「我想應該〜吧、不是〜嗎」。比直接說「〜と思います」更謙遜，常用於提出意見或建議時避免過於武斷。" }
+        ]
+      }
+    ]
+  }
+];
+
+let speeds = {}, repeats = {}, textHidden = {}, chineseVisible = {}, furiganaVisible = {};
+let currentAudio = null, currentBtn = null, currentRow = null, playAllQueue = null, isDark = false;
+
+const PLAY_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+const STOP_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14"/></svg>';
+const MOON_SVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const SUN_SVG    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const BOOKMARK_SVG = `<svg viewBox="0 0 16 20" fill="currentColor"><path d="M2 0h12a2 2 0 0 1 2 2v18l-8-4-8 4V2a2 2 0 0 1 2-2z"/></svg>`;
+
+let bookmarks = JSON.parse(localStorage.getItem('shadowing5-bookmarks') || '{}');
+
+function toggleDark() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('darkToggle').innerHTML = isDark ? SUN_SVG : MOON_SVG;
+}
+function toggleBookmark(lessonId) {
+  bookmarks[lessonId] = !bookmarks[lessonId];
+  if (bookmarks[lessonId]) data.forEach(l => { if (l.id !== lessonId) { bookmarks[l.id] = false; const b = document.getElementById('bookmark-' + l.id); if (b) b.classList.remove('marked'); } });
+  localStorage.setItem('shadowing5-bookmarks', JSON.stringify(bookmarks));
+  document.getElementById('bookmark-' + lessonId).classList.toggle('marked', bookmarks[lessonId]);
+}
+function stopAll() {
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (playAllQueue) { const b = document.getElementById('playall-' + playAllQueue.lessonId); if (b) { b.innerHTML = PLAY_ICON + ' 全部再生'; b.classList.remove('playing'); } playAllQueue = null; }
+}
+function playAudio(lessonId, uttIndex, fromPlayAll) {
+  const lesson = data.find(l => l.id === lessonId);
+  const btn = document.getElementById('btn-' + lessonId + '-' + uttIndex);
+  const row = document.getElementById('utt-' + lessonId + '-' + uttIndex);
+  const isSame = currentAudio && currentAudio._lessonId === lessonId && currentAudio._uttIndex === uttIndex;
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (!fromPlayAll && playAllQueue) { const b = document.getElementById('playall-' + playAllQueue.lessonId); if (b) { b.innerHTML = PLAY_ICON + ' 全部再生'; b.classList.remove('playing'); } playAllQueue = null; }
+  if (isSame && !fromPlayAll) return;
+  const audio = new Audio(lesson.utterances[uttIndex].audio);
+  audio.playbackRate = speeds[lessonId]; audio._lessonId = lessonId; audio._uttIndex = uttIndex;
+  btn.innerHTML = PAUSE_ICON; btn.classList.add('playing'); row.classList.add('is-playing');
+  currentAudio = audio; currentBtn = btn; currentRow = row;
+  audio.play().catch(e => console.error(e));
+  audio.onended = () => {
+    btn.innerHTML = PLAY_ICON; btn.classList.remove('playing'); row.classList.remove('is-playing');
+    currentAudio = null; currentBtn = null; currentRow = null;
+    if (playAllQueue && playAllQueue.lessonId === lessonId) {
+      const next = uttIndex + 1;
+      if (next < lesson.utterances.length) { playAllQueue.index = next; setTimeout(() => playAudio(lessonId, next, true), 300); }
+      else { const b = document.getElementById('playall-' + lessonId); if (b) { b.innerHTML = PLAY_ICON + ' 全部再生'; b.classList.remove('playing'); } playAllQueue = null; if (repeats[lessonId]) setTimeout(() => playAll(lessonId), 400); }
+    } else if (repeats[lessonId] && !playAllQueue) playAudio(lessonId, uttIndex, false);
+  };
+}
+function playAll(lessonId) {
+  const b = document.getElementById('playall-' + lessonId);
+  if (playAllQueue && playAllQueue.lessonId === lessonId) { stopAll(); return; }
+  stopAll(); playAllQueue = { lessonId, index: 0 };
+  b.innerHTML = STOP_ICON + ' 停止'; b.classList.add('playing');
+  playAudio(lessonId, 0, true);
+}
+function setSpeed(lessonId, speed) {
+  speeds[lessonId] = speed;
+  if (currentAudio && currentAudio._lessonId === lessonId) currentAudio.playbackRate = speed;
+  [0.75, 1.0, 1.25, 1.5].forEach(s => { const b = document.getElementById('speed-' + lessonId + '-' + s.toString().replace('.','_')); if (b) b.classList.toggle('active', s === speed); });
+}
+function toggleRepeat(lessonId) { repeats[lessonId] = !repeats[lessonId]; document.getElementById('repeat-' + lessonId).classList.toggle('active', repeats[lessonId]); }
+function toggleText(lessonId) {
+  textHidden[lessonId] = !textHidden[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .utterance-text').forEach(el => el.classList.toggle('hidden', textHidden[lessonId]));
+  const btn = document.getElementById('hide-' + lessonId);
+  btn.textContent = textHidden[lessonId] ? '日文顯示' : '日文隱藏'; btn.classList.toggle('active', textHidden[lessonId]);
+}
+function toggleChinese(lessonId) {
+  chineseVisible[lessonId] = !chineseVisible[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .sub-text').forEach(el => el.classList.toggle('visible', chineseVisible[lessonId]));
+  document.getElementById('zh-' + lessonId).classList.toggle('active', chineseVisible[lessonId]);
+}
+function toggleFurigana(lessonId) {
+  furiganaVisible[lessonId] = !furiganaVisible[lessonId];
+  const lesson = data.find(l => l.id === lessonId);
+  lesson.utterances.forEach((u, i) => { const el = document.getElementById('text-' + lessonId + '-' + i); if (el) el.innerHTML = furiganaVisible[lessonId] ? u.furigana : u.text; });
+  document.getElementById('fg-' + lessonId).classList.toggle('active', furiganaVisible[lessonId]);
+}
+function toggleGrammar(lessonId) {
+  const block = document.getElementById('grammar-' + lessonId);
+  const btn = document.getElementById('grammar-btn-' + lessonId);
+  const isOpen = block.classList.toggle('open');
+  btn.classList.toggle('active', isOpen); btn.textContent = isOpen ? '詳解 ▲' : '詳解';
+}
+function buildUI() {
+  const container = document.getElementById('lessons');
+  data.forEach(lesson => {
+    speeds[lesson.id] = 1.0; repeats[lesson.id] = false;
+    textHidden[lesson.id] = false; chineseVisible[lesson.id] = false; furiganaVisible[lesson.id] = false;
+    const card = document.createElement('div');
+    card.className = 'lesson-card'; card.id = 'card-' + lesson.id.replace('-','_');
+    const uttHTML = lesson.utterances.map((u,i) => `
+      <div class="utterance speaker-${u.speaker}" id="utt-${lesson.id}-${i}">
+        <div class="speaker-badge">${u.speaker}</div>
+        <div class="text-area">
+          <div class="utterance-text" id="text-${lesson.id}-${i}">${u.text}</div>
+          <div class="sub-text">${u.chinese}</div>
+        </div>
+        <button class="play-btn" id="btn-${lesson.id}-${i}" onclick="playAudio('${lesson.id}',${i},false)">${PLAY_ICON}</button>
+      </div>`).join('');
+    const speedBtns = [0.75,1.0,1.25,1.5].map(s => `<button class="speed-btn ${s===1.0?'active':''}" id="speed-${lesson.id}-${s.toString().replace('.','_')}" onclick="setSpeed('${lesson.id}',${s})">${s}x</button>`).join('');
+    const hasGrammar = lesson.utterances.some(u => u.grammar && u.grammar.length > 0);
+    const grammarHTML = hasGrammar ? `<div class="grammar-block" id="grammar-${lesson.id}"><div class="grammar-inner">${lesson.utterances.filter(u=>u.grammar&&u.grammar.length>0).map(u=>`<div class="grammar-sentence"><div class="grammar-sentence-label">${u.speaker}：${u.text}</div>${u.grammar.map(g=>`<div class="grammar-item"><div class="grammar-term">${g.term}</div><div class="grammar-desc">${g.desc}</div></div>`).join('')}</div>`).join('')}</div></div>` : '';
+    const grammarBtn = hasGrammar ? `<button class="grammar-btn" id="grammar-btn-${lesson.id}" onclick="toggleGrammar('${lesson.id}')">詳解</button>` : '';
+    card.innerHTML = `
+      <div class="lesson-header">
+        <div class="header-left">
+          <button class="bookmark-btn ${bookmarks[lesson.id]?'marked':''}" id="bookmark-${lesson.id}" onclick="toggleBookmark('${lesson.id}')">${BOOKMARK_SVG}</button>
+          <span class="lesson-num">${lesson.id}</span>
+          <button class="mini-btn" id="hide-${lesson.id}" onclick="toggleText('${lesson.id}')">日文隱藏</button>
+          <button class="mini-btn" id="fg-${lesson.id}" onclick="toggleFurigana('${lesson.id}')">平假名</button>
+          <button class="mini-btn" id="zh-${lesson.id}" onclick="toggleChinese('${lesson.id}')">中文</button>
+        </div>
+        <div class="header-right-btns">
+          <button class="play-all-btn" id="playall-${lesson.id}" onclick="playAll('${lesson.id}')">${PLAY_ICON} 全部再生</button>
+        </div>
+      </div>
+      <div class="utterances">${uttHTML}</div>
+      <div class="speed-controls"><span class="speed-label">速度</span>${speedBtns}${grammarBtn}<button class="repeat-btn" id="repeat-${lesson.id}" onclick="toggleRepeat('${lesson.id}')">↺ リピート</button></div>
+      ${grammarHTML}`;
+    container.appendChild(card);
+  });
+}
+buildUI();
+</script>
+</body>
+</html>

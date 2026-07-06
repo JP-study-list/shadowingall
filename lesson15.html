@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowing Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  :root { --ink: #1a1a2e; --paper: #f7f5f0; --accent: #4a6fa5; --accent-light: #e8eef7; --muted: #8a8a9a; --border: #dddbd4; --card: #ffffff; --a-color: #2d6a4f; --b-color: #6b3fa0; --a-bg: #eaf4ee; --b-bg: #f2ecfb; --speed-bg: #fafaf8; }
+  [data-theme="dark"] { --ink: #e8e6e1; --paper: #141418; --accent: #6b9fd4; --accent-light: #1e2a38; --muted: #666672; --border: #2e2e38; --card: #1e1e26; --a-color: #5bbf85; --b-color: #b07ee8; --a-bg: #1a2e22; --b-bg: #251a35; --speed-bg: #191920; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; padding: 1.5rem 1rem 4rem; transition: background 0.2s, color 0.2s; }
+  header { max-width: 660px; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .site-title { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 500; letter-spacing: 0.08em; color: var(--ink); text-transform: uppercase; }
+  .dark-toggle { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .dark-toggle svg { width: 16px; height: 16px; }
+  .dark-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .lessons { max-width: 660px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .lesson-card { background: var(--card); border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; transition: box-shadow 0.2s, background 0.2s, border-color 0.2s; }
+  .lesson-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .lesson-header { padding: 0.55rem 1rem 0.55rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .header-right-btns { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .lesson-num { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+  .bookmark-btn { width: 22px; height: 22px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--border); transition: color 0.15s, transform 0.1s; flex-shrink: 0; }
+  .bookmark-btn:hover { color: var(--muted); transform: scale(1.1); }
+  .bookmark-btn.marked { color: #e53935; }
+  .bookmark-btn svg { width: 14px; height: 18px; }
+  .mini-btn { font-family: 'Noto Sans JP', sans-serif; font-size: 0.63rem; padding: 0.15rem 0.45rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mini-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .play-all-btn { display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.22rem 0.65rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .play-all-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn.playing { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn svg { width: 9px; height: 9px; flex-shrink: 0; }
+  .utterances { display: flex; flex-direction: column; }
+  .utterance { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .utterance:last-child { border-bottom: none; }
+  .utterance.is-playing { background: var(--accent-light); }
+  .speaker-badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; margin-top: 0.15rem; }
+  .speaker-A .speaker-badge { background: var(--a-bg); color: var(--a-color); }
+  .speaker-B .speaker-badge { background: var(--b-bg); color: var(--b-color); }
+  .text-area { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+  .utterance-text { font-size: 0.95rem; line-height: 1.6; transition: opacity 0.25s, filter 0.25s; }
+  .utterance-text.hidden { opacity: 0; filter: blur(6px); pointer-events: none; user-select: none; }
+  .sub-text { font-size: 0.8rem; line-height: 1.5; color: var(--muted); display: none; }
+  .sub-text.visible { display: block; }
+  ruby { ruby-align: center; }
+  rt { font-size: 0.55em; color: var(--muted); }
+  .play-btn { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: var(--accent-light); color: var(--accent); margin-top: 0.05rem; }
+  .play-btn:hover { background: var(--accent); color: #fff; transform: scale(1.05); }
+  .play-btn.playing { background: var(--accent); color: #fff; }
+  .play-btn svg { width: 15px; height: 15px; }
+  .speed-controls { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem; border-top: 1px solid var(--border); background: var(--speed-bg); transition: background 0.2s; flex-wrap: wrap; }
+  .speed-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-right: 0.2rem; }
+  .speed-btn { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.18rem 0.45rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .speed-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .repeat-btn { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .repeat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .grammar-block { border-top: 1px solid var(--border); background: var(--speed-bg); overflow: hidden; max-height: 0; transition: max-height 0.35s ease, padding 0.2s; }
+  .grammar-block.open { max-height: 2000px; }
+  .grammar-inner { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; }
+  .grammar-sentence { display: flex; flex-direction: column; gap: 0.5rem; }
+  .grammar-sentence-label { font-size: 0.75rem; font-family: 'DM Mono', monospace; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  .grammar-item { display: flex; flex-direction: column; gap: 0.15rem; }
+  .grammar-term { font-size: 0.88rem; font-weight: 700; color: var(--accent); }
+  .grammar-desc { font-size: 0.82rem; line-height: 1.65; color: var(--ink); }
+  .grammar-btn { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .grammar-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <span class="site-title">Shadowing 15</span>
+    <span style="font-size:0.72rem;color:var(--muted);font-family:'Noto Sans JP',sans-serif;">交通・移動</span>
+  </div>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="切換深色模式">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+<div class="lessons" id="lessons"></div>
+<script>
+const data = [
+  { id: "15-1", utterances: [
+    { speaker: "A", text: "いらっしゃいませ。どうぞ、こちらにおかけください。", furigana: "いらっしゃいませ。どうぞ、こちらにおかけください。", chinese: "歡迎光臨，請坐這裡。", audio: "audio/15-01_1.mp3", grammar: [{ term: "おかけください", desc: "「かける（坐）」的敬語請求形，「お〜ください」是禮貌邀請對方的句型，意思是「請坐」。" }] },
+    { speaker: "B", text: "予約確認のコピーです。", furigana: "<ruby>予約確認<rt>よやくかくにん</rt></ruby>のコピーです。", chinese: "這是預約確認單的影本。", audio: "audio/15-01_2.mp3", grammar: [] },
+    { speaker: "A", text: "はい、恐れ入りますが、パスポートと免許証を拝見できますか。こちら、コピーをとってもよろしいでしょうか。", furigana: "はい、<ruby>恐<rt>おそ</rt></ruby>れ<ruby>入<rt>い</rt></ruby>りますが、パスポートと<ruby>免許証<rt>めんきょしょう</rt></ruby>を<ruby>拝見<rt>はいけん</rt></ruby>できますか。こちら、コピーをとってもよろしいでしょうか。", chinese: "好的，不好意思，可以讓我看一下您的護照和駕照嗎？這邊可以幫您影印一份嗎？", audio: "audio/15-01_3.mp3", grammar: [{ term: "恐れ入りますが", desc: "固定表現，比「すみませんが」更謙遜，常用於提出請求之前，相當於「非常抱歉打擾您，但是〜」。" }, { term: "拝見できますか", desc: "「拝見する」是「見る」的謙讓語，「拝見できますか」是請求對方讓自己查看某物的敬語句型。" }] },
+    { speaker: "B", text: "どうぞ。", furigana: "どうぞ。", chinese: "請。", audio: "audio/15-01_4.mp3", grammar: [] }
+  ]},
+  { id: "15-2", utterances: [
+    { speaker: "A", text: "お客様、国際免許証はお持ちではありませんか。この免許証は日本では使えません。", furigana: "お<ruby>客様<rt>きゃくさま</rt></ruby>、<ruby>国際免許証<rt>こくさいめんきょしょう</rt></ruby>はお<ruby>持<rt>も</rt></ruby>ちではありませんか。この<ruby>免許証<rt>めんきょしょう</rt></ruby>は<ruby>日本<rt>にほん</rt></ruby>では<ruby>使<rt>つか</rt></ruby>えません。", chinese: "這位客人，您有國際駕照嗎？這張駕照在日本是無法使用的。", audio: "audio/15-02_1.mp3", grammar: [{ term: "お持ちではありませんか", desc: "「持っていますか」的敬語否定疑問形，語氣比「お持ちですか」更委婉，帶有提醒的語感。" }] },
+    { speaker: "B", text: "はい、はい。これです。", furigana: "はい、はい。これです。", chinese: "有的，有的，就是這個。", audio: "audio/15-02_2.mp3", grammar: [] }
+  ]},
+  { id: "15-3", utterances: [
+    { speaker: "A", text: "保険にはお入りになりますか。", furigana: "<ruby>保険<rt>ほけん</rt></ruby>にはお<ruby>入<rt>はい</rt></ruby>りになりますか。", chinese: "請問您要加保險嗎？", audio: "audio/15-03_1.mp3", grammar: [{ term: "お入りになりますか", desc: "「入る」的尊敬語，「お〜になる」是尊敬語句型，「保険に入る」表示「投保」。" }] },
+    { speaker: "B", text: "この安心プランって、どんな内容ですか。中国語の説明書がありますか。", furigana: "この<ruby>安心<rt>あんしん</rt></ruby>プランって、どんな<ruby>内容<rt>ないよう</rt></ruby>ですか。<ruby>中国語<rt>ちゅうごくご</rt></ruby>の<ruby>説明書<rt>せつめいしょ</rt></ruby>がありますか。", chinese: "這個安心方案是什麼內容呢？有中文說明書嗎？", audio: "audio/15-03_2.mp3", grammar: [{ term: "〜って、どんな内容ですか", desc: "「って」是提示助詞，「どんな内容ですか」詢問詳細內容，是詢問方案細節的常用句型。" }] },
+    { speaker: "A", text: "はい、こちらでございます。お読みになって、同意される場合はこちらにサインをお願いいたします。", furigana: "はい、こちらでございます。お<ruby>読<rt>よ</rt></ruby>みになって、<ruby>同意<rt>どうい</rt></ruby>される<ruby>場合<rt>ばあい</rt></ruby>はこちらにサインをお<ruby>願<rt>ねが</rt></ruby>いいたします。", chinese: "好的，在這裡。請您閱讀後，如果同意的話請在這裡簽名。", audio: "audio/15-03_3.mp3", grammar: [{ term: "お読みになって", desc: "「読む」的尊敬語，「お〜になる」是尊敬語句型，「お読みになって」意思是「您閱讀之後」。" }, { term: "同意される場合は", desc: "「同意する」的尊敬語加「場合は」，意思是「如果您同意的情況下」。" }] }
+  ]},
+  { id: "15-4", utterances: [
+    { speaker: "A", text: "車種の変更はできますか。ワゴン車がいいんですが。", furigana: "<ruby>車種<rt>しゃしゅ</rt></ruby>の<ruby>変更<rt>へんこう</rt></ruby>はできますか。ワゴン<ruby>車<rt>しゃ</rt></ruby>がいいんですが。", chinese: "可以更換車種嗎？我想要廂型車。", audio: "audio/15-04_1.mp3", grammar: [{ term: "車種の変更はできますか", desc: "「車種」表示「車款、車型」，「変更はできますか」詢問是否可以更換，是租車時常見的問句。" }] },
+    { speaker: "B", text: "差額をいただくことになりますが、よろしいでしょうか。", furigana: "<ruby>差額<rt>さがく</rt></ruby>をいただくことになりますが、よろしいでしょうか。", chinese: "需要收取差額，這樣可以嗎？", audio: "audio/15-04_2.mp3", grammar: [{ term: "差額をいただくことになりますが", desc: "「いただく」是謙讓語，「〜ことになる」表示「將會〜」，整體意思是「將需要向您收取差額」。" }] }
+  ]},
+  { id: "15-5", utterances: [
+    { speaker: "A", text: "こちらが車のキーです。お車までご案内いたします。こちらのカーナビは中国語も選択できます。こちらが主な観光地のナビ入力番号です。", furigana: "こちらが<ruby>車<rt>くるま</rt></ruby>のキーです。お<ruby>車<rt>くるま</rt></ruby>までご<ruby>案内<rt>あんない</rt></ruby>いたします。こちらのカーナビは<ruby>中国語<rt>ちゅうごくご</rt></ruby>も<ruby>選択<rt>せんたく</rt></ruby>できます。こちらが<ruby>主<rt>おも</rt></ruby>な<ruby>観光地<rt>かんこうち</rt></ruby>のナビ<ruby>入力番号<rt>にゅうりょくばんごう</rt></ruby>です。", chinese: "這是車鑰匙。我帶您到車旁邊。這台導航也可以選擇中文。這是主要觀光地的導航輸入號碼。", audio: "audio/15-05_1.mp3", grammar: [{ term: "ご案内いたします", desc: "「案内する」的謙讓語，「ご〜いたします」是謙讓語句型，意思是「我來帶您前往」。" }] },
+    { speaker: "B", text: "ありがとう。", furigana: "ありがとう。", chinese: "謝謝。", audio: "audio/15-05_2.mp3", grammar: [] },
+    { speaker: "A", text: "返却時はガソリンを満タンにしてください。", furigana: "<ruby>返却時<rt>へんきゃくじ</rt></ruby>はガソリンを<ruby>満<rt>まん</rt></ruby>タンにしてください。", chinese: "還車時請將油箱加滿。", audio: "audio/15-05_3.mp3", grammar: [{ term: "満タンにしてください", desc: "「満タン」是「油箱加滿」，「〜にしてください」表示「請讓它成為〜狀態」。" }] },
+    { speaker: "B", text: "わかりました。", furigana: "わかりました。", chinese: "我知道了。", audio: "audio/15-05_4.mp3", grammar: [] }
+  ]},
+  { id: "15-6", utterances: [
+    { speaker: "A", text: "お車をご確認ください。", furigana: "お<ruby>車<rt>くるま</rt></ruby>をご<ruby>確認<rt>かくにん</rt></ruby>ください。", chinese: "請確認車輛狀況。", audio: "audio/15-06_1.mp3", grammar: [{ term: "ご確認ください", desc: "「確認する」的敬語請求形，「ご〜ください」是禮貌請求句型，意思是「請確認」。" }] },
+    { speaker: "B", text: "ここに傷があるみたいなんですけど。", furigana: "ここに<ruby>傷<rt>きず</rt></ruby>があるみたいなんですけど。", chinese: "這裡好像有一道刮痕耶。", audio: "audio/15-06_2.mp3", grammar: [{ term: "〜みたいなんですけど", desc: "「みたい」表示推測，「んですけど」留有後話，整體意思是「好像有〜，請確認一下」。" }] }
+  ]},
+  { id: "15-7", utterances: [
+    { speaker: "A", text: "事故を起こしてしまったんですが。", furigana: "<ruby>事故<rt>じこ</rt></ruby>を<ruby>起<rt>お</rt></ruby>こしてしまったんですが。", chinese: "我發生了事故。", audio: "audio/15-07_1.mp3", grammar: [{ term: "事故を起こしてしまった", desc: "「〜てしまった」帶有無奈、遺憾的語氣，「事故を起こしてしまった」意思是「不小心發生了事故」。" }] },
+    { speaker: "B", text: "警察にはご連絡いただけましたか。", furigana: "<ruby>警察<rt>けいさつ</rt></ruby>にはご<ruby>連絡<rt>れんらく</rt></ruby>いただけましたか。", chinese: "您有聯絡警察了嗎？", audio: "audio/15-07_2.mp3", grammar: [{ term: "ご連絡いただけましたか", desc: "「連絡する」的謙讓語疑問形，「ご〜いただく」表示「請對方為自己做某事」，整體詢問是否已聯絡。" }] }
+  ]},
+  { id: "15-8", utterances: [
+    { speaker: "A", text: "いらっしゃいませ。満タンですか。", furigana: "いらっしゃいませ。<ruby>満<rt>まん</rt></ruby>タンですか。", chinese: "歡迎光臨，請問要加滿嗎？", audio: "audio/15-08_1.mp3", grammar: [{ term: "満タンですか", desc: "加油站常用問句，詢問是否要將油箱加滿。" }] },
+    { speaker: "B", text: "1000円分入れてください。", furigana: "1000<ruby>円分<rt>えんぶん</rt></ruby><ruby>入<rt>い</rt></ruby>れてください。", chinese: "請加1000日圓的油。", audio: "audio/15-08_2.mp3", grammar: [{ term: "〜円分入れてください", desc: "「〜分」表示「〜的量、〜份額」，「1000円分入れてください」是加固定金額汽油的說法。" }] }
+  ]},
+  { id: "15-9", utterances: [
+    { speaker: "A", text: "すみません、切符を間違えて買ってしまったんですが。", furigana: "すみません、<ruby>切符<rt>きっぷ</rt></ruby>を<ruby>間違<rt>まちが</rt></ruby>えて<ruby>買<rt>か</rt></ruby>ってしまったんですが。", chinese: "不好意思，我不小心買錯車票了。", audio: "audio/15-09_1.mp3", grammar: [{ term: "間違えて買ってしまった", desc: "「間違える」表示「搞錯」，「〜てしまった」帶有遺憾的語氣，整體意思是「不小心買錯了」。" }] },
+    { speaker: "B", text: "では、払い戻しをしますので、もう一度券売機でご購入ください。", furigana: "では、<ruby>払<rt>はら</rt></ruby>い<ruby>戻<rt>もど</rt></ruby>しをしますので、もう<ruby>一度<rt>いちど</rt></ruby><ruby>券売機<rt>けんばいき</rt></ruby>でご<ruby>購入<rt>こうにゅう</rt></ruby>ください。", chinese: "那，我們幫您退款，請您再到售票機重新購票。", audio: "audio/15-09_2.mp3", grammar: [{ term: "払い戻しをします", desc: "「払い戻し」表示「退款、退費」，是購票錯誤時的處理方式。" }, { term: "ご購入ください", desc: "「購入する」的敬語請求形，「ご〜ください」是禮貌請求句型，意思是「請購買」。" }] }
+  ]},
+  { id: "15-10", utterances: [
+    { speaker: "A", text: "あのう、切符を落としたみたいなんですが。", furigana: "あのう、<ruby>切符<rt>きっぷ</rt></ruby>を<ruby>落<rt>お</rt></ruby>としたみたいなんですが。", chinese: "不好意思，我好像把票掉了。", audio: "audio/15-10_1.mp3", grammar: [] },
+    { speaker: "B", text: "切符を買い直していただくことになりますが。何駅からご乗車になりましたか。", furigana: "<ruby>切符<rt>きっぷ</rt></ruby>を<ruby>買<rt>か</rt></ruby>い<ruby>直<rt>なお</rt></ruby>していただくことになりますが。<ruby>何駅<rt>なにえき</rt></ruby>からご<ruby>乗車<rt>じょうしゃ</rt></ruby>になりましたか。", chinese: "將需要請您重新購票。請問您是從哪一站上車的呢？", audio: "audio/15-10_2.mp3", grammar: [{ term: "買い直していただくことになりますが", desc: "「買い直す」表示「重新購買」，「〜ていただく」是謙讓語，「〜ことになる」表示「將會〜」，整體是告知乘客需要重新購票的說法。" }, { term: "ご乗車になりましたか", desc: "「乗車する」的尊敬語，「ご〜になる」是尊敬語句型，意思是「您是從哪裡搭上的」。" }] },
+    { speaker: "A", text: "東京駅です。", furigana: "<ruby>東京駅<rt>とうきょうえき</rt></ruby>です。", chinese: "東京站。", audio: "audio/15-10_3.mp3", grammar: [] },
+    { speaker: "B", text: "では、この駅までは380円ですね。こちらが紛失再発行の切符です。最終乗車証明は必要ですか。", furigana: "では、この<ruby>駅<rt>えき</rt></ruby>までは380<ruby>円<rt>えん</rt></ruby>ですね。こちらが<ruby>紛失再発行<rt>ふんしつさいはっこう</rt></ruby>の<ruby>切符<rt>きっぷ</rt></ruby>です。<ruby>最終乗車証明<rt>さいしゅうじょうしゃしょうめい</rt></ruby>は<ruby>必要<rt>ひつよう</rt></ruby>ですか。", chinese: "那麼，到這站是380日圓。這是補發的車票。您需要最後乘車證明嗎？", audio: "audio/15-10_4.mp3", grammar: [{ term: "紛失再発行", desc: "「紛失」表示「遺失」，「再発行」表示「重新補發」，「紛失再発行の切符」意思是「因遺失而補發的車票」。" }] },
+    { speaker: "A", text: "いいえ、けっこうです。", furigana: "いいえ、けっこうです。", chinese: "不用了，這樣就好。", audio: "audio/15-10_5.mp3", grammar: [{ term: "けっこうです", desc: "用於婉拒，意思是「這樣就夠了、不需要了」。" }] }
+  ]},
+  { id: "15-11", utterances: [
+    { speaker: "A", text: "すみません、このカードが使えますか。", furigana: "すみません、このカードが<ruby>使<rt>つか</rt></ruby>えますか。", chinese: "不好意思，這張卡可以用嗎？", audio: "audio/15-11_1.mp3", grammar: [{ term: "使えますか", desc: "「使う」的可能形疑問句，詢問是否可以使用某物。" }] },
+    { speaker: "B", text: "はい、ご利用いただけます。", furigana: "はい、ご<ruby>利用<rt>りよう</rt></ruby>いただけます。", chinese: "是的，可以使用。", audio: "audio/15-11_2.mp3", grammar: [{ term: "ご利用いただけます", desc: "「利用する」加謙讓語「ご〜いただく」的可能形，意思是「可以使用」，是禮貌的告知說法。" }] }
+  ]},
+  { id: "15-12", utterances: [
+    { speaker: "A", text: "すみません、森美術館へ行きますか。", furigana: "すみません、<ruby>森美術館<rt>もりびじゅつかん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きますか。", chinese: "不好意思，請問這班車有去森美術館嗎？", audio: "audio/15-12_1.mp3", grammar: [{ term: "〜へ行きますか", desc: "詢問交通工具是否前往某地的問句。" }] },
+    { speaker: "B", text: "森美術館へは、306番のバスにお乗りください。", furigana: "<ruby>森美術館<rt>もりびじゅつかん</rt></ruby>へは、306<ruby>番<rt>ばん</rt></ruby>のバスにお<ruby>乗<rt>の</rt></ruby>りください。", chinese: "前往森美術館請搭乘306號巴士。", audio: "audio/15-12_2.mp3", grammar: [{ term: "〜にお乗りください", desc: "「乗る」的敬語請求形，「お〜ください」是禮貌指引的句型，意思是「請搭乘〜」。" }] },
+    { speaker: "A", text: "ここで待てばいいんでしょうか。", furigana: "ここで<ruby>待<rt>ま</rt></ruby>てばいいんでしょうか。", chinese: "在這裡等就好了嗎？", audio: "audio/15-12_3.mp3", grammar: [{ term: "〜ばいいんでしょうか", desc: "「〜ばいい」表示「只要〜就好」，「でしょうか」禮貌確認，整體意思是「只要〜就可以了嗎？」" }] },
+    { speaker: "B", text: "駅の反対側です。", furigana: "<ruby>駅<rt>えき</rt></ruby>の<ruby>反対側<rt>はんたいがわ</rt></ruby>です。", chinese: "在車站的另一側。", audio: "audio/15-12_4.mp3", grammar: [] }
+  ]},
+  { id: "15-13", utterances: [
+    { speaker: "A", text: "お預けになる荷物はいくつありますか？", furigana: "お<ruby>預<rt>あず</rt></ruby>けになる<ruby>荷物<rt>にもつ</rt></ruby>はいくつありますか?", chinese: "請問您要托運幾件行李呢？", audio: "audio/15-13_1.mp3", grammar: [{ term: "お預けになる", desc: "「預ける」的尊敬語，「お〜になる」是尊敬語句型，意思是「您要托運的」。" }] },
+    { speaker: "B", text: "二つです。", furigana: "<ruby>二<rt>ふた</rt></ruby>つです。", chinese: "兩件。", audio: "audio/15-13_2.mp3", grammar: [] },
+    { speaker: "A", text: "台北までお荷物をお預かりいたしました。こちらが搭乗券でございます。14時15分までに45番ゲートにお越しください。お荷物、あちらでご確認ください。", furigana: "<ruby>台北<rt>たいぺい</rt></ruby>までお<ruby>荷物<rt>にもつ</rt></ruby>をお<ruby>預<rt>あず</rt></ruby>かりいたしました。こちらが<ruby>搭乗券<rt>とうじょうけん</rt></ruby>でございます。14<ruby>時<rt>じ</rt></ruby>15<ruby>分<rt>ふん</rt></ruby>までに45<ruby>番<rt>ばん</rt></ruby>ゲートにお<ruby>越<rt>こ</rt></ruby>しください。お<ruby>荷物<rt>にもつ</rt></ruby>、あちらでご<ruby>確認<rt>かくにん</rt></ruby>ください。", chinese: "您的行李已托運至台北。這是您的登機證。請在14點15分之前到45號登機門。行李請在那邊確認。", audio: "audio/15-13_3.mp3", grammar: [{ term: "お預かりいたしました", desc: "「預かる」加謙讓語「お〜いたす」，意思是「我們已為您保管（托運）」。" }, { term: "お越しください", desc: "「来る」的敬語請求形，「お越しください」意思是「請前往」，比「来てください」更正式。" }] }
+  ]},
+  { id: "15-14", utterances: [
+    { speaker: "A", text: "シートベルトをお締めください。お席とテーブルを元の場所にお戻しください。", furigana: "シートベルトをお<ruby>締<rt>し</rt></ruby>めください。お<ruby>席<rt>せき</rt></ruby>とテーブルを<ruby>元<rt>もと</rt></ruby>の<ruby>場所<rt>ばしょ</rt></ruby>にお<ruby>戻<rt>もど</rt></ruby>しください。", chinese: "請繫好安全帶。請將座椅和桌子回復到原來的位置。", audio: "audio/15-14_1.mp3", grammar: [{ term: "お締めください", desc: "「締める」的敬語請求形，是飛機廣播中請乘客繫好安全帶的標準用語。" }, { term: "元の場所にお戻しください", desc: "「元の場所」表示「原來的位置」，「お戻しください」是「戻す」的敬語請求形，意思是「請恢復到原位」。" }] },
+    { speaker: "B", text: "あっ、すみません。", furigana: "あっ、すみません。", chinese: "啊，抱歉。", audio: "audio/15-14_2.mp3", grammar: [] }
+  ]}
+];
+
+let speeds={},repeats={},textHidden={},chineseVisible={},furiganaVisible={};
+let currentAudio=null,currentBtn=null,currentRow=null,playAllQueue=null,isDark=false;
+const PLAY_ICON='<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+const PAUSE_ICON='<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+const STOP_ICON='<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14"/></svg>';
+const MOON_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const SUN_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const BOOKMARK_SVG=`<svg viewBox="0 0 16 20" fill="currentColor"><path d="M2 0h12a2 2 0 0 1 2 2v18l-8-4-8 4V2a2 2 0 0 1 2-2z"/></svg>`;
+let bookmarks=JSON.parse(localStorage.getItem('shadowing-bookmarks')||'{}');
+function toggleDark(){isDark=!isDark;document.documentElement.setAttribute('data-theme',isDark?'dark':'light');document.getElementById('darkToggle').innerHTML=isDark?SUN_SVG:MOON_SVG;}
+function toggleBookmark(id){bookmarks[id]=!bookmarks[id];if(bookmarks[id]){data.forEach(l=>{if(l.id!==id){bookmarks[l.id]=false;const b=document.getElementById('bookmark-'+l.id);if(b)b.classList.remove('marked');}});}localStorage.setItem('shadowing-bookmarks',JSON.stringify(bookmarks));document.getElementById('bookmark-'+id).classList.toggle('marked',bookmarks[id]);}
+function stopAll(){if(currentAudio){currentAudio.onended=null;currentAudio.pause();currentAudio=null;}if(currentBtn){currentBtn.innerHTML=PLAY_ICON;currentBtn.classList.remove('playing');currentBtn=null;}if(currentRow){currentRow.classList.remove('is-playing');currentRow=null;}if(playAllQueue){const b=document.getElementById('playall-'+playAllQueue.lessonId);if(b){b.innerHTML=PLAY_ICON+' 全部再生';b.classList.remove('playing');}playAllQueue=null;}}
+function playAudio(lessonId,uttIndex,fromPlayAll){const lesson=data.find(l=>l.id===lessonId);const btn=document.getElementById('btn-'+lessonId+'-'+uttIndex);const row=document.getElementById('utt-'+lessonId+'-'+uttIndex);const isSame=currentAudio&&currentAudio._lessonId===lessonId&&currentAudio._uttIndex===uttIndex;if(currentAudio){currentAudio.onended=null;currentAudio.pause();currentAudio=null;}if(currentBtn){currentBtn.innerHTML=PLAY_ICON;currentBtn.classList.remove('playing');currentBtn=null;}if(currentRow){currentRow.classList.remove('is-playing');currentRow=null;}if(!fromPlayAll&&playAllQueue){const b=document.getElementById('playall-'+playAllQueue.lessonId);if(b){b.innerHTML=PLAY_ICON+' 全部再生';b.classList.remove('playing');}playAllQueue=null;}if(isSame&&!fromPlayAll)return;const audio=new Audio(lesson.utterances[uttIndex].audio);audio.playbackRate=speeds[lessonId];audio._lessonId=lessonId;audio._uttIndex=uttIndex;btn.innerHTML=PAUSE_ICON;btn.classList.add('playing');row.classList.add('is-playing');currentAudio=audio;currentBtn=btn;currentRow=row;audio.play().catch(e=>console.error(e));audio.onended=()=>{btn.innerHTML=PLAY_ICON;btn.classList.remove('playing');row.classList.remove('is-playing');currentAudio=null;currentBtn=null;currentRow=null;if(playAllQueue&&playAllQueue.lessonId===lessonId){const nextIndex=uttIndex+1;if(nextIndex<lesson.utterances.length){playAllQueue.index=nextIndex;setTimeout(()=>playAudio(lessonId,nextIndex,true),300);}else{const b=document.getElementById('playall-'+lessonId);if(b){b.innerHTML=PLAY_ICON+' 全部再生';b.classList.remove('playing');}playAllQueue=null;if(repeats[lessonId])setTimeout(()=>playAll(lessonId),400);}}else if(repeats[lessonId]&&!playAllQueue){playAudio(lessonId,uttIndex,false);}};}
+function playAll(lessonId){const b=document.getElementById('playall-'+lessonId);if(playAllQueue&&playAllQueue.lessonId===lessonId){stopAll();return;}stopAll();playAllQueue={lessonId,index:0};b.innerHTML=STOP_ICON+' 停止';b.classList.add('playing');playAudio(lessonId,0,true);}
+function setSpeed(lessonId,speed){speeds[lessonId]=speed;if(currentAudio&&currentAudio._lessonId===lessonId)currentAudio.playbackRate=speed;[0.75,1.0,1.25,1.5].forEach(s=>{const b=document.getElementById('speed-'+lessonId+'-'+s.toString().replace('.','_'));if(b)b.classList.toggle('active',s===speed);});}
+function toggleRepeat(lessonId){repeats[lessonId]=!repeats[lessonId];document.getElementById('repeat-'+lessonId).classList.toggle('active',repeats[lessonId]);}
+function toggleText(lessonId){textHidden[lessonId]=!textHidden[lessonId];const hidden=textHidden[lessonId];document.querySelectorAll('#card-'+lessonId.replace('-','_')+' .utterance-text').forEach(el=>el.classList.toggle('hidden',hidden));const btn=document.getElementById('hide-'+lessonId);btn.textContent=hidden?'日文顯示':'日文隱藏';btn.classList.toggle('active',hidden);}
+function toggleChinese(lessonId){chineseVisible[lessonId]=!chineseVisible[lessonId];const visible=chineseVisible[lessonId];document.querySelectorAll('#card-'+lessonId.replace('-','_')+' .sub-text').forEach(el=>el.classList.toggle('visible',visible));document.getElementById('zh-'+lessonId).classList.toggle('active',visible);}
+function toggleFurigana(lessonId){furiganaVisible[lessonId]=!furiganaVisible[lessonId];const visible=furiganaVisible[lessonId];const lesson=data.find(l=>l.id===lessonId);lesson.utterances.forEach((u,i)=>{const el=document.getElementById('text-'+lessonId+'-'+i);if(el)el.innerHTML=visible?u.furigana:u.text;});document.getElementById('fg-'+lessonId).classList.toggle('active',visible);}
+function toggleGrammar(lessonId){const block=document.getElementById('grammar-'+lessonId);const btn=document.getElementById('grammar-btn-'+lessonId);const isOpen=block.classList.toggle('open');btn.classList.toggle('active',isOpen);btn.textContent=isOpen?'詳解 ▲':'詳解';}
+function buildUI(){const container=document.getElementById('lessons');data.forEach(lesson=>{speeds[lesson.id]=1.0;repeats[lesson.id]=false;textHidden[lesson.id]=false;chineseVisible[lesson.id]=false;furiganaVisible[lesson.id]=false;const card=document.createElement('div');card.className='lesson-card';card.id='card-'+lesson.id.replace('-','_');const uttHTML=lesson.utterances.map((u,i)=>`<div class="utterance speaker-${u.speaker}" id="utt-${lesson.id}-${i}"><div class="speaker-badge">${u.speaker}</div><div class="text-area"><div class="utterance-text" id="text-${lesson.id}-${i}">${u.text}</div><div class="sub-text">${u.chinese}</div></div><button class="play-btn" id="btn-${lesson.id}-${i}" onclick="playAudio('${lesson.id}',${i},false)" aria-label="再生">${PLAY_ICON}</button></div>`).join('');const speedBtns=[0.75,1.0,1.25,1.5].map(s=>`<button class="speed-btn ${s===1.0?'active':''}" id="speed-${lesson.id}-${s.toString().replace('.','_')}" onclick="setSpeed('${lesson.id}',${s})">${s}x</button>`).join('');const hasGrammar=lesson.utterances.some(u=>u.grammar&&u.grammar.length>0);const grammarHTML=hasGrammar?`<div class="grammar-block" id="grammar-${lesson.id}"><div class="grammar-inner">${lesson.utterances.filter(u=>u.grammar&&u.grammar.length>0).map((u,i)=>`<div class="grammar-sentence"><div class="grammar-sentence-label">${u.speaker}：${u.text}</div>${u.grammar.map(g=>`<div class="grammar-item"><div class="grammar-term">${g.term}</div><div class="grammar-desc">${g.desc}</div></div>`).join('')}</div>`).join('')}</div></div>`:'';const grammarBtn=hasGrammar?`<button class="grammar-btn" id="grammar-btn-${lesson.id}" onclick="toggleGrammar('${lesson.id}')">詳解</button>`:'';card.innerHTML=`<div class="lesson-header"><div class="header-left"><button class="bookmark-btn ${bookmarks[lesson.id]?'marked':''}" id="bookmark-${lesson.id}" onclick="toggleBookmark('${lesson.id}')" title="書籤">${BOOKMARK_SVG}</button><span class="lesson-num">${lesson.id}</span><button class="mini-btn" id="hide-${lesson.id}" onclick="toggleText('${lesson.id}')">日文隱藏</button><button class="mini-btn" id="fg-${lesson.id}" onclick="toggleFurigana('${lesson.id}')">平假名</button><button class="mini-btn" id="zh-${lesson.id}" onclick="toggleChinese('${lesson.id}')">中文</button></div><div class="header-right-btns"><button class="play-all-btn" id="playall-${lesson.id}" onclick="playAll('${lesson.id}')">${PLAY_ICON} 全部再生</button></div></div><div class="utterances">${uttHTML}</div><div class="speed-controls"><span class="speed-label">速度</span>${speedBtns}${grammarBtn}<button class="repeat-btn" id="repeat-${lesson.id}" onclick="toggleRepeat('${lesson.id}')">↺ リピート</button></div>${grammarHTML}`;container.appendChild(card);});}
+buildUI();
+</script>
+</body>
+</html>

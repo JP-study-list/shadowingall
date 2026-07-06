@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowing Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --ink: #1a1a2e; --paper: #f7f5f0; --accent: #4a6fa5;
+    --accent-light: #e8eef7; --muted: #8a8a9a; --border: #dddbd4;
+    --card: #ffffff; --a-color: #2d6a4f; --b-color: #6b3fa0;
+    --a-bg: #eaf4ee; --b-bg: #f2ecfb; --speed-bg: #fafaf8;
+  }
+  [data-theme="dark"] {
+    --ink: #e8e6e1; --paper: #141418; --accent: #6b9fd4;
+    --accent-light: #1e2a38; --muted: #666672; --border: #2e2e38;
+    --card: #1e1e26; --a-color: #5bbf85; --b-color: #b07ee8;
+    --a-bg: #1a2e22; --b-bg: #251a35; --speed-bg: #191920;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; padding: 1.5rem 1rem 4rem; transition: background 0.2s, color 0.2s; }
+
+  header { max-width: 660px; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .site-title { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 500; letter-spacing: 0.08em; color: var(--ink); text-transform: uppercase; }
+  .dark-toggle { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .dark-toggle svg { width: 16px; height: 16px; }
+  .dark-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  .lessons { max-width: 660px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .lesson-card { background: var(--card); border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; transition: box-shadow 0.2s, background 0.2s, border-color 0.2s; }
+  .lesson-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+  .lesson-header { padding: 0.55rem 1rem 0.55rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .header-right-btns { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .lesson-num { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+
+  .bookmark-btn { width: 22px; height: 22px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--border); transition: color 0.15s, transform 0.1s; flex-shrink: 0; }
+  .bookmark-btn:hover { color: var(--muted); transform: scale(1.1); }
+  .bookmark-btn.marked { color: #e53935; }
+  .bookmark-btn svg { width: 14px; height: 18px; }
+
+  .mini-btn { font-family: 'Noto Sans JP', sans-serif; font-size: 0.63rem; padding: 0.15rem 0.45rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mini-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .play-all-btn { display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.22rem 0.65rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .play-all-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn.playing { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn svg { width: 9px; height: 9px; flex-shrink: 0; }
+
+  .utterances { display: flex; flex-direction: column; }
+  .utterance { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .utterance:last-child { border-bottom: none; }
+  .utterance.is-playing { background: var(--accent-light); }
+  .speaker-badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; margin-top: 0.15rem; }
+  .speaker-A .speaker-badge { background: var(--a-bg); color: var(--a-color); }
+  .speaker-B .speaker-badge { background: var(--b-bg); color: var(--b-color); }
+  .text-area { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+  .utterance-text { font-size: 0.95rem; line-height: 1.6; transition: opacity 0.25s, filter 0.25s; }
+  .utterance-text.hidden { opacity: 0; filter: blur(6px); pointer-events: none; user-select: none; }
+  .sub-text { font-size: 0.8rem; line-height: 1.5; color: var(--muted); display: none; }
+  .sub-text.visible { display: block; }
+  ruby { ruby-align: center; }
+  rt { font-size: 0.55em; color: var(--muted); }
+
+  .play-btn { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: var(--accent-light); color: var(--accent); margin-top: 0.05rem; }
+  .play-btn:hover { background: var(--accent); color: #fff; transform: scale(1.05); }
+  .play-btn.playing { background: var(--accent); color: #fff; }
+  .play-btn svg { width: 15px; height: 15px; }
+
+  .speed-controls { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem; border-top: 1px solid var(--border); background: var(--speed-bg); transition: background 0.2s; flex-wrap: wrap; }
+  .speed-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-right: 0.2rem; }
+  .speed-btn { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.18rem 0.45rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .speed-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .repeat-btn { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .repeat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .grammar-block { border-top: 1px solid var(--border); background: var(--speed-bg); overflow: hidden; max-height: 0; transition: max-height 0.35s ease, padding 0.2s; }
+  .grammar-block.open { max-height: 2000px; }
+  .grammar-inner { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; }
+  .grammar-sentence { display: flex; flex-direction: column; gap: 0.5rem; }
+  .grammar-sentence-label { font-size: 0.75rem; font-family: 'DM Mono', monospace; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  .grammar-item { display: flex; flex-direction: column; gap: 0.15rem; }
+  .grammar-term { font-size: 0.88rem; font-weight: 700; color: var(--accent); }
+  .grammar-desc { font-size: 0.82rem; line-height: 1.65; color: var(--ink); }
+  .grammar-btn { font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .grammar-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <span class="site-title">Shadowing 9</span>
+    <span style="font-size:0.72rem;color:var(--muted);font-family:'Noto Sans JP',sans-serif;">観光・撮影</span>
+  </div>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="切換深色模式">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+</header>
+
+<div class="lessons" id="lessons"></div>
+
+<script>
+const data = [
+  {
+    id: "9-1",
+    utterances: [
+      {
+        speaker: "A",
+        text: "もう満開かなって思ってたけど、まだ5分咲きってところかな。",
+        furigana: "もう<ruby>満開<rt>まんかい</rt></ruby>かなって<ruby>思<rt>おも</rt></ruby>ってたけど、まだ5<ruby>分咲<rt>ぶざ</rt></ruby>きってところかな。",
+        chinese: "我以為已經滿開了，結果好像只開了五分左右呢。",
+        audio: "audio/09-01_1.mp3",
+        grammar: [
+          { term: "満開かなって思ってた", desc: "「〜かな」表示猶豫推測，「〜って思ってた」是「と思っていた」的口語形，意思是「原本以為〜」。" },
+          { term: "5分咲きってところかな", desc: "「〜分咲き」表示開花的比例，「5分咲き」意思是「開了五成」，「ってところ」表示大概的程度。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "そうだね。散り始めの時にもう一度来たいな。花びらが風に舞ってなんとも言えない美しさだから。",
+        furigana: "そうだね。<ruby>散<rt>ち</rt></ruby>り<ruby>始<rt>はじ</rt></ruby>めの<ruby>時<rt>とき</rt></ruby>にもう<ruby>一度<rt>いちど</rt></ruby><ruby>来<rt>き</rt></ruby>たいな。<ruby>花<rt>はな</rt></ruby>びらが<ruby>風<rt>かぜ</rt></ruby>に<ruby>舞<rt>ま</rt></ruby>ってなんとも<ruby>言<rt>い</rt></ruby>えない<ruby>美<rt>うつく</rt></ruby>しさだから。",
+        chinese: "對啊。等到花瓣開始飄落的時候，真想再來一次。因為花瓣在風中飛舞的樣子，美得無法形容。",
+        audio: "audio/09-01_2.mp3",
+        grammar: [
+          { term: "散り始めの時", desc: "「散り始め」是「開始凋落」，「〜の時」表示「〜的時候」。" },
+          { term: "なんとも言えない", desc: "慣用語，意思是「無法言喻、難以形容」，常用於描述極致的美或感受。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-2",
+    utterances: [
+      {
+        speaker: "A",
+        text: "ねえ、起きて。外は雪だよ。",
+        furigana: "ねえ、<ruby>起<rt>お</rt></ruby>きて。<ruby>外<rt>そと</rt></ruby>は<ruby>雪<rt>ゆき</rt></ruby>だよ。",
+        chinese: "喂，起床啦。外面下雪了喔。",
+        audio: "audio/09-02_1.mp3",
+        grammar: [
+          { term: "〜だよ", desc: "終助詞，用於告知、提醒對方資訊，語氣輕鬆隨意。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "一面の雪景色、きれいだな。でも、寒！",
+        furigana: "<ruby>一面<rt>いちめん</rt></ruby>の<ruby>雪景色<rt>ゆきげしき</rt></ruby>、きれいだな。でも、<ruby>寒<rt>さむ</rt></ruby>!",
+        chinese: "一片雪景，好美啊。不過，好冷！",
+        audio: "audio/09-02_2.mp3",
+        grammar: [
+          { term: "一面の雪景色", desc: "「一面」表示「整片、滿是」，「一面の雪景色」意思是「滿是雪景的一片風光」。" },
+          { term: "寒！", desc: "形容詞辭書形直接作感嘆使用，省略了後面部分，是非常口語的感嘆表現。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "近くに神社があったよね。まだ、誰も来てない時をねらって、写真撮りに行こうよ。",
+        furigana: "<ruby>近<rt>ちか</rt></ruby>くに<ruby>神社<rt>じんじゃ</rt></ruby>があったよね。まだ、<ruby>誰<rt>だれ</rt></ruby>も<ruby>来<rt>き</rt></ruby>てない<ruby>時<rt>とき</rt></ruby>をねらって、<ruby>写真<rt>しゃしん</rt></ruby><ruby>撮<rt>と</rt></ruby>りに<ruby>行<rt>い</rt></ruby>こうよ。",
+        chinese: "附近有間神社對吧。趁現在還沒有人來，我們去拍照吧。",
+        audio: "audio/09-02_3.mp3",
+        grammar: [
+          { term: "〜時をねらって", desc: "「ねらう」表示「瞄準、抓住時機」，「〜時をねらって」意思是「抓住〜的時機」。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-3",
+    utterances: [
+      {
+        speaker: "A",
+        text: "お願い。お城をバックに写真撮って。",
+        furigana: "お<ruby>願<rt>ねが</rt></ruby>い。お<ruby>城<rt>しろ</rt></ruby>をバックに<ruby>写真<rt>しゃしん</rt></ruby><ruby>撮<rt>と</rt></ruby>って。",
+        chinese: "拜託，幫我以城堡為背景拍張照。",
+        audio: "audio/09-03_1.mp3",
+        grammar: [
+          { term: "〜をバックに", desc: "「バック」是外來語「背景」，「〜をバックに」意思是「以〜為背景」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "ok。縦がいい？横がいい？",
+        furigana: "ok。<ruby>縦<rt>たて</rt></ruby>がいい?<ruby>横<rt>よこ</rt></ruby>がいい?",
+        chinese: "好。要直拍還是橫拍？",
+        audio: "audio/09-03_2.mp3",
+        grammar: [
+          { term: "縦がいい？横がいい？", desc: "「縦」「横」分別指「直向」「橫向」，常用於詢問拍照方向的偏好。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "縦で。もみじも入れて欲しいな。それから、全身入れてね。",
+        furigana: "<ruby>縦<rt>たて</rt></ruby>で。もみじも<ruby>入<rt>い</rt></ruby>れて<ruby>欲<rt>ほ</rt></ruby>しいな。それから、<ruby>全身<rt>ぜんしん</rt></ruby><ruby>入<rt>い</rt></ruby>れてね。",
+        chinese: "直拍。也想把楓葉拍進去。還有，要拍全身喔。",
+        audio: "audio/09-03_3.mp3",
+        grammar: [
+          { term: "〜て欲しい", desc: "表示「希望對方做〜」，「入れて欲しい」意思是「希望（你）放進去」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "じゃ、もうちょっと右によって。じゃ、撮るね。はい、チーズ。",
+        furigana: "じゃ、もうちょっと<ruby>右<rt>みぎ</rt></ruby>によって。じゃ、<ruby>撮<rt>と</rt></ruby>るね。はい、チーズ。",
+        chinese: "那，再往右邊一點。好，要拍了喔。來，笑一個。",
+        audio: "audio/09-03_4.mp3",
+        grammar: [
+          { term: "もうちょっと右によって", desc: "「よる」表示「靠近」，「右によって」意思是「往右邊靠一點」。" },
+          { term: "はい、チーズ", desc: "拍照時常用的提示語，相當於中文的「來，笑一個」。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-4",
+    utterances: [
+      {
+        speaker: "A",
+        text: "わあ、大きな湖、きれい！今日はお天気に恵まれてよかったね。",
+        furigana: "わあ、<ruby>大<rt>おお</rt></ruby>きな<ruby>湖<rt>みずうみ</rt></ruby>、きれい!<ruby>今日<rt>きょう</rt></ruby>はお<ruby>天気<rt>てんき</rt></ruby>に<ruby>恵<rt>めぐ</rt></ruby>まれてよかったね。",
+        chinese: "哇，好大的湖，好美！今天天氣這麼好，運氣真不錯。",
+        audio: "audio/09-04_1.mp3",
+        grammar: [
+          { term: "お天気に恵まれて", desc: "「恵まれる」表示「受到（好的事物）眷顧」，「お天気に恵まれる」意思是「天氣很好（幸運地遇到好天氣）」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "うん、雄大な景色だね。あの展望台にも行ってみようよ。",
+        furigana: "うん、<ruby>雄大<rt>ゆうだい</rt></ruby>な<ruby>景色<rt>けしき</rt></ruby>だね。あの<ruby>展望台<rt>てんぼうだい</rt></ruby>にも<ruby>行<rt>い</rt></ruby>ってみようよ。",
+        chinese: "嗯，景色真壯闊呢。我們也去那個展望台看看吧。",
+        audio: "audio/09-04_2.mp3",
+        grammar: [
+          { term: "雄大な景色", desc: "「雄大」表示「雄偉、壯闊」，用於形容大自然景觀的壯麗。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "待って、この彫刻の前で一枚撮って。",
+        furigana: "<ruby>待<rt>ま</rt></ruby>って、この<ruby>彫刻<rt>ちょうこく</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>で<ruby>一枚<rt>いちまい</rt></ruby><ruby>撮<rt>と</rt></ruby>って。",
+        chinese: "等一下，在這個雕像前面幫我拍一張。",
+        audio: "audio/09-04_3.mp3",
+        grammar: [
+          { term: "〜の前で", desc: "「〜の前で」表示「在〜的前面」，用於指定拍照的位置。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "わかった。どう？",
+        furigana: "わかった。どう?",
+        chinese: "好。怎麼樣？",
+        audio: "audio/09-04_4.mp3",
+        grammar: []
+      },
+      {
+        speaker: "A",
+        text: "うん、よく撮れてる。",
+        furigana: "うん、よく<ruby>撮<rt>と</rt></ruby>れてる。",
+        chinese: "嗯，拍得很好。",
+        audio: "audio/09-04_5.mp3",
+        grammar: [
+          { term: "撮れてる", desc: "「撮れている」的口語縮短形，「〜てる」表示「拍得好（的狀態）」。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-5",
+    utterances: [
+      {
+        speaker: "A",
+        text: "ランチ、この店でよかったら、アプリで予約するけど。今なら、並ばなくても入れるよ。",
+        furigana: "ランチ、この<ruby>店<rt>みせ</rt></ruby>でよかったら、アプリで<ruby>予約<rt>よやく</rt></ruby>するけど。<ruby>今<rt>いま</rt></ruby>なら、<ruby>並<rt>なら</rt></ruby>ばなくても<ruby>入<rt>はい</rt></ruby>れるよ。",
+        chinese: "午餐如果這家店可以的話，我用APP訂位喔。現在訂的話，不用排隊就能進去喔。",
+        audio: "audio/09-05_1.mp3",
+        grammar: [
+          { term: "〜でよかったら", desc: "表示「如果〜可以的話」，是禮貌詢問對方意見的用法。" },
+          { term: "並ばなくても入れる", desc: "「〜なくても」表示「即使不〜也」，「並ばなくても入れる」意思是「不用排隊就能進去」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "ほんと？お願い。お腹ぺこぺこなんだ。ついでに注文もしちゃおうよ。",
+        furigana: "ほんと?お<ruby>願<rt>ねが</rt></ruby>い。お<ruby>腹<rt>なか</rt></ruby>ぺこぺこなんだ。ついでに<ruby>注文<rt>ちゅうもん</rt></ruby>もしちゃおうよ。",
+        chinese: "真的？拜託你了。我肚子餓得咕咕叫了。順便連點餐也一起搞定吧。",
+        audio: "audio/09-05_2.mp3",
+        grammar: [
+          { term: "お腹ぺこぺこ", desc: "擬態語，形容「肚子餓得咕咕叫」，比「お腹が空いた」更生動口語。" },
+          { term: "ついでに", desc: "副詞，表示「順便」，用於提議在做某事的同時也完成另一件事。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-6",
+    utterances: [
+      {
+        speaker: "A",
+        text: "これ、おいしいよ。食べてみて。",
+        furigana: "これ、おいしいよ。<ruby>食<rt>た</rt></ruby>べてみて。",
+        chinese: "這個很好吃喔，吃看看。",
+        audio: "audio/09-06_1.mp3",
+        grammar: [
+          { term: "食べてみて", desc: "「〜てみる」表示「嘗試做〜」，「食べてみて」是請求對方嘗試吃看看。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "うん、外はさくっとしてて、お肉も柔らかくてジューシー。たまに揚げ物も美味しいね。",
+        furigana: "うん、<ruby>外<rt>そと</rt></ruby>はさくっとしてて、お<ruby>肉<rt>にく</rt></ruby>も<ruby>柔<rt>やわ</rt></ruby>らかくてジューシー。たまに<ruby>揚<rt>あ</rt></ruby>げ<ruby>物<rt>もの</rt></ruby>も<ruby>美味<rt>おい</rt></ruby>しいね。",
+        chinese: "嗯，外皮酥脆，肉也軟嫩多汁。偶爾吃炸物也挺不錯的呢。",
+        audio: "audio/09-06_2.mp3",
+        grammar: [
+          { term: "さくっとしてて", desc: "「さくっと」是擬態語，形容酥脆的口感，「〜してて」是「している」的口語縮短形。" },
+          { term: "ジューシー", desc: "外來語形容詞，意思是「多汁的」，常用於描述肉類食物的口感。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "ああ、お腹いっぱい。そろそろ、デザートだな。",
+        furigana: "ああ、お<ruby>腹<rt>なか</rt></ruby>いっぱい。そろそろ、デザートだな。",
+        chinese: "啊，肚子好飽。差不多該吃甜點了。",
+        audio: "audio/09-06_3.mp3",
+        grammar: [
+          { term: "お腹いっぱい", desc: "「肚子很飽」，常省略「だ」直接感嘆使用。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "えっ？お腹いっぱいなんじゃないの？",
+        furigana: "えっ?お<ruby>腹<rt>なか</rt></ruby>いっぱいなんじゃないの?",
+        chinese: "欸？你不是說肚子很飽了嗎？",
+        audio: "audio/09-06_4.mp3",
+        grammar: []
+      },
+      {
+        speaker: "A",
+        text: "甘いものは別腹。ここのパフェ、おいしいんだよ。どう？",
+        furigana: "<ruby>甘<rt>あま</rt></ruby>いものは<ruby>別腹<rt>べつばら</rt></ruby>。ここのパフェ、おいしいんだよ。どう?",
+        chinese: "甜點是另一個胃裝的。這裡的水果聖代很好吃喔，你要不要？",
+        audio: "audio/09-06_5.mp3",
+        grammar: [
+          { term: "甘いものは別腹", desc: "慣用語，意思是「甜食是裝在另一個胃裡的」，用於說明即使吃飽了也還想吃甜點。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "いや、もう入らない。",
+        furigana: "いや、もう<ruby>入<rt>はい</rt></ruby>らない。",
+        chinese: "不了，我真的吃不下了。",
+        audio: "audio/09-06_6.mp3",
+        grammar: [
+          { term: "もう入らない", desc: "「入る」表示「（東西）裝得進去」，「もう入らない」意思是「已經吃不下了」。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-7",
+    utterances: [
+      {
+        speaker: "A",
+        text: "申し訳ございません。こちらでは三脚や自撮り棒はご遠慮ください。",
+        furigana: "<ruby>申<rt>もう</rt></ruby>し<ruby>訳<rt>わけ</rt></ruby>ございません。こちらでは<ruby>三脚<rt>さんきゃく</rt></ruby>や<ruby>自撮<rt>じど</rt></ruby>り<ruby>棒<rt>ぼう</rt></ruby>はご<ruby>遠慮<rt>えんりょ</rt></ruby>ください。",
+        chinese: "非常抱歉，這裡請不要使用三腳架或自拍棒。",
+        audio: "audio/09-07_1.mp3",
+        grammar: [
+          { term: "申し訳ございません", desc: "比「すみません」更正式、更謙卑的道歉表現，常用於服務業或正式場合。" },
+          { term: "ご遠慮ください", desc: "「遠慮する」加「ご〜ください」的敬語句型，是禮貌地要求對方「請避免〜」的說法。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "知りませんでした。すみません。",
+        furigana: "<ruby>知<rt>し</rt></ruby>りませんでした。すみません。",
+        chinese: "我不知道，抱歉。",
+        audio: "audio/09-07_2.mp3",
+        grammar: [
+          { term: "知りませんでした", desc: "表示「（之前）不知道」，用於對自己無意造成的疏失表示抱歉。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-8",
+    utterances: [
+      {
+        speaker: "A",
+        text: "温泉に行くなら、浴衣に着替えていったら？",
+        furigana: "<ruby>温泉<rt>おんせん</rt></ruby>に<ruby>行<rt>い</rt></ruby>くなら、<ruby>浴衣<rt>ゆかた</rt></ruby>に<ruby>着替<rt>きが</rt></ruby>えていったら?",
+        chinese: "如果要去溫泉的話，要不要換上浴衣再去？",
+        audio: "audio/09-08_1.mp3",
+        grammar: [
+          { term: "〜に着替えていったら？", desc: "「着替えていく」表示「換好衣服再去」，「〜たら？」是提議句型，相當於「要不要〜？」" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "そうだな。浴衣と帯と羽織か。羽織はいらないよね。",
+        furigana: "そうだな。<ruby>浴衣<rt>ゆかた</rt></ruby>と<ruby>帯<rt>おび</rt></ruby>と<ruby>羽織<rt>はおり</rt></ruby>か。<ruby>羽織<rt>はおり</rt></ruby>はいらないよね。",
+        chinese: "也對。浴衣、腰帶跟羽織嗎。羽織應該不需要吧。",
+        audio: "audio/09-08_2.mp3",
+        grammar: [
+          { term: "〜か", desc: "終助詞，用於確認、思考列舉的內容，帶有自言自語的語氣。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "すぐ部屋に帰ってくるならいいけど、外をぶらぶらしたいなら、持っていった方がいいよ。ちょっと寒くなってきたから、湯冷めしちゃうよ。それから、部屋のタオルを持っていってね。大浴場にはバスタオルしかないってここに書いてあるよ。",
+        furigana: "すぐ<ruby>部屋<rt>へや</rt></ruby>に<ruby>帰<rt>かえ</rt></ruby>ってくるならいいけど、<ruby>外<rt>そと</rt></ruby>をぶらぶらしたいなら、<ruby>持<rt>も</rt></ruby>っていった<ruby>方<rt>ほう</rt></ruby>がいいよ。ちょっと<ruby>寒<rt>さむ</rt></ruby>くなってきたから、<ruby>湯冷<rt>ゆざ</rt></ruby>めしちゃうよ。それから、<ruby>部屋<rt>へや</rt></ruby>のタオルを<ruby>持<rt>も</rt></ruby>っていってね。<ruby>大浴場<rt>だいよくじょう</rt></ruby>にはバスタオルしかないってここに<ruby>書<rt>か</rt></ruby>いてあるよ。",
+        chinese: "如果馬上就回房間的話可以不用，但如果想到外面走走逛逛，最好還是帶著。因為現在變冷了，泡完湯著涼會感冒喔。還有，記得帶房間的毛巾去。這裡寫著大浴場只有浴巾，沒有一般毛巾喔。",
+        audio: "audio/09-08_3.mp3",
+        grammar: [
+          { term: "〜ならいいけど", desc: "「〜なら」假定條件，「〜ならいいけど」意思是「如果是〜的話沒問題，但是〜」。" },
+          { term: "湯冷めしちゃう", desc: "「湯冷め」是「泡完溫泉後身體著涼」的專有名詞，「〜しちゃう」帶有不希望發生但可能發生的語氣。" },
+          { term: "〜しかない", desc: "句型，表示「只有〜」，「バスタオルしかない」意思是「只有浴巾」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "わかった。",
+        furigana: "わかった。",
+        chinese: "知道了。",
+        audio: "audio/09-08_4.mp3",
+        grammar: []
+      }
+    ]
+  },
+  {
+    id: "9-9",
+    utterances: [
+      {
+        speaker: "A",
+        text: "露天風呂、外は雪が積もってるけど、寒くなかった？",
+        furigana: "<ruby>露天風呂<rt>ろてんぶろ</rt></ruby>、<ruby>外<rt>そと</rt></ruby>は<ruby>雪<rt>ゆき</rt></ruby>が<ruby>積<rt>つ</rt></ruby>もってるけど、<ruby>寒<rt>さむ</rt></ruby>くなかった?",
+        chinese: "露天溫泉，外面都積雪了，會不會冷？",
+        audio: "audio/09-09_1.mp3",
+        grammar: [
+          { term: "雪が積もってる", desc: "「積もる」表示「積雪、堆積」，「〜てる」是「ている」的口語縮短，表示持續的狀態。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "湯船に浸かって、体が温まったら、冷たい風が逆に気持ちよかったよ。",
+        furigana: "<ruby>湯船<rt>ゆぶね</rt></ruby>に<ruby>浸<rt>つ</rt></ruby>かって、<ruby>体<rt>からだ</rt></ruby>が<ruby>温<rt>あたた</rt></ruby>まったら、<ruby>冷<rt>つめ</rt></ruby>たい<ruby>風<rt>かぜ</rt></ruby>が<ruby>逆<rt>ぎゃく</rt></ruby>に<ruby>気持<rt>きも</rt></ruby>ちよかったよ。",
+        chinese: "泡進浴池裡，身體溫熱起來之後，冷風吹來反而覺得很舒服喔。",
+        audio: "audio/09-09_2.mp3",
+        grammar: [
+          { term: "湯船に浸かって", desc: "「浸かる」表示「浸泡」，「湯船に浸かる」是「泡進浴池」的固定說法。" },
+          { term: "逆に", desc: "副詞，表示「反而、相反地」，用於表達與預期相反的結果。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "そうなんだ。じゃ、僕も入ってこようかな。",
+        furigana: "そうなんだ。じゃ、<ruby>僕<rt>ぼく</rt></ruby>も<ruby>入<rt>はい</rt></ruby>ってこようかな。",
+        chinese: "是這樣啊。那我也去泡一下好了。",
+        audio: "audio/09-09_3.mp3",
+        grammar: [
+          { term: "〜てこようかな", desc: "「てくる」表示去做某事再回來，「〜ようかな」帶有猶豫考慮的語氣，「入ってこようかな」意思是「要不要去泡一下呢」。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "9-10",
+    utterances: [
+      {
+        speaker: "A",
+        text: "そろそろ出かけようか。一日乗車券持った？",
+        furigana: "そろそろ<ruby>出<rt>で</rt></ruby>かけようか。<ruby>一日乗車券<rt>いちにちじょうしゃけん</rt></ruby><ruby>持<rt>も</rt></ruby>った?",
+        chinese: "差不多該出門了吧。一日券帶了嗎？",
+        audio: "audio/09-10_1.mp3",
+        grammar: [
+          { term: "そろそろ出かけようか", desc: "「そろそろ」表示「差不多該〜了」，「〜ようか」是邀約的語氣。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "うん、まずは映画のロケ地にもなった古い街並みが残ってるところからだよね。そこを観光してランチだっけ。",
+        furigana: "うん、まずは<ruby>映画<rt>えいが</rt></ruby>のロケ<ruby>地<rt>ち</rt></ruby>にもなった<ruby>古<rt>ふる</rt></ruby>い<ruby>街並<rt>まちな</rt></ruby>みが<ruby>残<rt>のこ</rt></ruby>ってるところからだよね。そこを<ruby>観光<rt>かんこう</rt></ruby>してランチだっけ。",
+        chinese: "帶了，首先要先去那個曾經當過電影拍攝地、還保留著古老街景的地方對吧。在那邊觀光完之後吃午餐對吧。",
+        audio: "audio/09-10_2.mp3",
+        grammar: [
+          { term: "ロケ地にもなった", desc: "「ロケ地」是外來語，指「拍攝外景地」，「〜にもなった」表示「也曾經成為〜」。" },
+          { term: "〜だっけ", desc: "回想確認的終助詞，用於確認記憶不確定的事。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "ランチの前にそこから徒歩10分のところにある神社に行くんじゃなかった？",
+        furigana: "ランチの<ruby>前<rt>まえ</rt></ruby>にそこから<ruby>徒歩<rt>とほ</rt></ruby>10<ruby>分<rt>ぷん</rt></ruby>のところにある<ruby>神社<rt>じんじゃ</rt></ruby>に<ruby>行<rt>い</rt></ruby>くんじゃなかった?",
+        chinese: "吃午餐之前不是要先去從那裡走十分鐘可以到的神社嗎？",
+        audio: "audio/09-10_3.mp3",
+        grammar: [
+          { term: "〜んじゃなかった？", desc: "反問句，用於確認自己記得的計畫是否正確，相當於「不是〜嗎？」" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "そうだった。お守りも買いたいし、おみくじも引きたいもんね。",
+        furigana: "そうだった。お<ruby>守<rt>まも</rt></ruby>りも<ruby>買<rt>か</rt></ruby>いたいし、おみくじも<ruby>引<rt>ひ</rt></ruby>きたいもんね。",
+        chinese: "對耶。我也想買護身符，還想抽個籤呢。",
+        audio: "audio/09-10_4.mp3",
+        grammar: [
+          { term: "〜たいし、〜たいもんね", desc: "「し」用於列舉理由，「もんね」是「ものね」的口語縮短，帶有理所當然的語氣。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "ランチはそこからバスで3つ目のところ。そこはショッピングもできるし、老舗のホテルもあるから、そこでお茶するのもいいね。",
+        furigana: "ランチはそこからバスで3つ<ruby>目<rt>め</rt></ruby>のところ。そこはショッピングもできるし、<ruby>老舗<rt>しにせ</rt></ruby>のホテルもあるから、そこでお<ruby>茶<rt>ちゃ</rt></ruby>するのもいいね。",
+        chinese: "午餐的地方是從那裡搭巴士三站的位置。那邊可以購物，還有老字號的飯店，在那裡喝個茶應該也不錯。",
+        audio: "audio/09-10_5.mp3",
+        grammar: [
+          { term: "バスで3つ目のところ", desc: "「〜で」表示交通方式，「3つ目」表示「第三個（站）」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "私はその近くの美術館に行きたいんだ。どうする？",
+        furigana: "<ruby>私<rt>わたし</rt></ruby>はその<ruby>近<rt>ちか</rt></ruby>くの<ruby>美術館<rt>びじゅつかん</rt></ruby>に<ruby>行<rt>い</rt></ruby>きたいんだ。どうする?",
+        chinese: "我想去那附近的美術館。怎麼辦？",
+        audio: "audio/09-10_6.mp3",
+        grammar: [
+          { term: "どうする？", desc: "用於商量接下來的安排，詢問對方有什麼想法。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "じゃ、別行動で。僕はバスで港の方へ行ってみる。",
+        furigana: "じゃ、<ruby>別行動<rt>べつこうどう</rt></ruby>で。<ruby>僕<rt>ぼく</rt></ruby>はバスで<ruby>港<rt>みなと</rt></ruby>の<ruby>方<rt>ほう</rt></ruby>へ<ruby>行<rt>い</rt></ruby>ってみる。",
+        chinese: "那就分開行動吧。我搭巴士去港口那邊看看。",
+        audio: "audio/09-10_7.mp3",
+        grammar: [
+          { term: "別行動で", desc: "「で」表示決定的方式，「別行動で」意思是「就用分開行動的方式」。" }
+        ]
+      },
+      {
+        speaker: "B",
+        text: "ok。ってことは、夕食の店の前で集合ね。予約は6時だったよね。",
+        furigana: "ok。ってことは、<ruby>夕食<rt>ゆうしょく</rt></ruby>の<ruby>店<rt>みせ</rt></ruby>の<ruby>前<rt>まえ</rt></ruby>で<ruby>集合<rt>しゅうごう</rt></ruby>ね。<ruby>予約<rt>よやく</rt></ruby>は6<ruby>時<rt>じ</rt></ruby>だったよね。",
+        chinese: "好。那就是說，在晚餐那家店前面集合對吧。預約是六點對吧。",
+        audio: "audio/09-10_8.mp3",
+        grammar: [
+          { term: "ってことは", desc: "「ということは」的口語縮短，用於根據前述內容推論出結論，相當於「也就是說」。" }
+        ]
+      },
+      {
+        speaker: "A",
+        text: "うん。食べてから、一緒に夜景見に行こうね。",
+        furigana: "うん。<ruby>食<rt>た</rt></ruby>べてから、<ruby>一緒<rt>いっしょ</rt></ruby>に<ruby>夜景<rt>やけい</rt></ruby><ruby>見<rt>み</rt></ruby>に<ruby>行<rt>い</rt></ruby>こうね。",
+        chinese: "嗯。吃完之後，我們一起去看夜景吧。",
+        audio: "audio/09-10_9.mp3",
+        grammar: [
+          { term: "食べてから", desc: "「〜てから」表示「在〜之後」，用於安排先後順序的動作。" }
+        ]
+      }
+    ]
+  }
+];
+
+let speeds = {};
+let repeats = {};
+let textHidden = {};
+let chineseVisible = {};
+let furiganaVisible = {};
+let currentAudio = null;
+let currentBtn = null;
+let currentRow = null;
+let playAllQueue = null;
+let isDark = false;
+
+const PLAY_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+const STOP_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14"/></svg>';
+const MOON_SVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const SUN_SVG    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const BOOKMARK_SVG = `<svg viewBox="0 0 16 20" fill="currentColor"><path d="M2 0h12a2 2 0 0 1 2 2v18l-8-4-8 4V2a2 2 0 0 1 2-2z"/></svg>`;
+
+let bookmarks = JSON.parse(localStorage.getItem('shadowing-bookmarks') || '{}');
+
+function toggleDark() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('darkToggle').innerHTML = isDark ? SUN_SVG : MOON_SVG;
+}
+
+function toggleBookmark(lessonId) {
+  bookmarks[lessonId] = !bookmarks[lessonId];
+  if (bookmarks[lessonId]) {
+    data.forEach(l => {
+      if (l.id !== lessonId) {
+        bookmarks[l.id] = false;
+        const b = document.getElementById('bookmark-' + l.id);
+        if (b) b.classList.remove('marked');
+      }
+    });
+  }
+  localStorage.setItem('shadowing-bookmarks', JSON.stringify(bookmarks));
+  document.getElementById('bookmark-' + lessonId).classList.toggle('marked', bookmarks[lessonId]);
+}
+
+function stopAll() {
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (playAllQueue) {
+    const allBtn = document.getElementById('playall-' + playAllQueue.lessonId);
+    if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+    playAllQueue = null;
+  }
+}
+
+function playAudio(lessonId, uttIndex, fromPlayAll) {
+  const lesson = data.find(l => l.id === lessonId);
+  const btn = document.getElementById('btn-' + lessonId + '-' + uttIndex);
+  const row = document.getElementById('utt-' + lessonId + '-' + uttIndex);
+  const isSame = currentAudio && currentAudio._lessonId === lessonId && currentAudio._uttIndex === uttIndex;
+
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (!fromPlayAll && playAllQueue) {
+    const allBtn = document.getElementById('playall-' + playAllQueue.lessonId);
+    if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+    playAllQueue = null;
+  }
+
+  if (isSame && !fromPlayAll) return;
+
+  const audio = new Audio(lesson.utterances[uttIndex].audio);
+  audio.playbackRate = speeds[lessonId];
+  audio._lessonId = lessonId;
+  audio._uttIndex = uttIndex;
+
+  btn.innerHTML = PAUSE_ICON;
+  btn.classList.add('playing');
+  row.classList.add('is-playing');
+  currentAudio = audio; currentBtn = btn; currentRow = row;
+
+  audio.play().catch(e => console.error('Play failed:', e));
+
+  audio.onended = () => {
+    btn.innerHTML = PLAY_ICON; btn.classList.remove('playing');
+    row.classList.remove('is-playing');
+    currentAudio = null; currentBtn = null; currentRow = null;
+
+    if (playAllQueue && playAllQueue.lessonId === lessonId) {
+      const nextIndex = uttIndex + 1;
+      if (nextIndex < lesson.utterances.length) {
+        playAllQueue.index = nextIndex;
+        setTimeout(() => playAudio(lessonId, nextIndex, true), 300);
+      } else {
+        const allBtn = document.getElementById('playall-' + lessonId);
+        if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+        playAllQueue = null;
+        if (repeats[lessonId]) setTimeout(() => playAll(lessonId), 400);
+      }
+    } else if (repeats[lessonId] && !playAllQueue) {
+      playAudio(lessonId, uttIndex, false);
+    }
+  };
+}
+
+function playAll(lessonId) {
+  const allBtn = document.getElementById('playall-' + lessonId);
+  if (playAllQueue && playAllQueue.lessonId === lessonId) { stopAll(); return; }
+  stopAll();
+  playAllQueue = { lessonId, index: 0 };
+  allBtn.innerHTML = STOP_ICON + ' 停止';
+  allBtn.classList.add('playing');
+  playAudio(lessonId, 0, true);
+}
+
+function setSpeed(lessonId, speed) {
+  speeds[lessonId] = speed;
+  if (currentAudio && currentAudio._lessonId === lessonId) currentAudio.playbackRate = speed;
+  [0.75, 1.0, 1.25, 1.5].forEach(s => {
+    const b = document.getElementById('speed-' + lessonId + '-' + s.toString().replace('.', '_'));
+    if (b) b.classList.toggle('active', s === speed);
+  });
+}
+
+function toggleRepeat(lessonId) {
+  repeats[lessonId] = !repeats[lessonId];
+  document.getElementById('repeat-' + lessonId).classList.toggle('active', repeats[lessonId]);
+}
+
+function toggleText(lessonId) {
+  textHidden[lessonId] = !textHidden[lessonId];
+  const hidden = textHidden[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .utterance-text')
+    .forEach(el => el.classList.toggle('hidden', hidden));
+  const btn = document.getElementById('hide-' + lessonId);
+  btn.textContent = hidden ? '日文顯示' : '日文隱藏';
+  btn.classList.toggle('active', hidden);
+}
+
+function toggleChinese(lessonId) {
+  chineseVisible[lessonId] = !chineseVisible[lessonId];
+  const visible = chineseVisible[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .sub-text')
+    .forEach(el => el.classList.toggle('visible', visible));
+  const btn = document.getElementById('zh-' + lessonId);
+  btn.classList.toggle('active', visible);
+}
+
+function toggleFurigana(lessonId) {
+  furiganaVisible[lessonId] = !furiganaVisible[lessonId];
+  const visible = furiganaVisible[lessonId];
+  const lesson = data.find(l => l.id === lessonId);
+  lesson.utterances.forEach((u, i) => {
+    const el = document.getElementById('text-' + lessonId + '-' + i);
+    if (el) el.innerHTML = visible ? u.furigana : u.text;
+  });
+  const btn = document.getElementById('fg-' + lessonId);
+  btn.classList.toggle('active', visible);
+}
+
+function toggleGrammar(lessonId) {
+  const block = document.getElementById('grammar-' + lessonId);
+  const btn = document.getElementById('grammar-btn-' + lessonId);
+  const isOpen = block.classList.toggle('open');
+  btn.classList.toggle('active', isOpen);
+  btn.textContent = isOpen ? '詳解 ▲' : '詳解';
+}
+
+function buildUI() {
+  const container = document.getElementById('lessons');
+  data.forEach(lesson => {
+    speeds[lesson.id] = 1.0;
+    repeats[lesson.id] = false;
+    textHidden[lesson.id] = false;
+    chineseVisible[lesson.id] = false;
+    furiganaVisible[lesson.id] = false;
+
+    const card = document.createElement('div');
+    card.className = 'lesson-card';
+    card.id = 'card-' + lesson.id.replace('-', '_');
+
+    const uttHTML = lesson.utterances.map((u, i) => `
+      <div class="utterance speaker-${u.speaker}" id="utt-${lesson.id}-${i}">
+        <div class="speaker-badge">${u.speaker}</div>
+        <div class="text-area">
+          <div class="utterance-text" id="text-${lesson.id}-${i}">${u.text}</div>
+          <div class="sub-text">${u.chinese}</div>
+        </div>
+        <button class="play-btn" id="btn-${lesson.id}-${i}" onclick="playAudio('${lesson.id}', ${i}, false)" aria-label="再生">
+          ${PLAY_ICON}
+        </button>
+      </div>
+    `).join('');
+
+    const speedBtns = [0.75, 1.0, 1.25, 1.5].map(s =>
+      `<button class="speed-btn ${s === 1.0 ? 'active' : ''}" id="speed-${lesson.id}-${s.toString().replace('.', '_')}" onclick="setSpeed('${lesson.id}', ${s})">${s}x</button>`
+    ).join('');
+
+    const hasGrammar = lesson.utterances.some(u => u.grammar && u.grammar.length > 0);
+    const grammarHTML = hasGrammar ? `
+      <div class="grammar-block" id="grammar-${lesson.id}">
+        <div class="grammar-inner">
+          ${lesson.utterances.filter(u => u.grammar && u.grammar.length > 0).map((u, i) => `
+            <div class="grammar-sentence">
+              <div class="grammar-sentence-label">${u.speaker}：${u.text}</div>
+              ${u.grammar.map(g => `
+                <div class="grammar-item">
+                  <div class="grammar-term">${g.term}</div>
+                  <div class="grammar-desc">${g.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    const grammarBtn = hasGrammar
+      ? `<button class="grammar-btn" id="grammar-btn-${lesson.id}" onclick="toggleGrammar('${lesson.id}')">詳解</button>`
+      : '';
+
+    card.innerHTML = `
+      <div class="lesson-header">
+        <div class="header-left">
+          <button class="bookmark-btn ${bookmarks[lesson.id] ? 'marked' : ''}" id="bookmark-${lesson.id}" onclick="toggleBookmark('${lesson.id}')" title="書籤">${BOOKMARK_SVG}</button>
+          <span class="lesson-num">${lesson.id}</span>
+          <button class="mini-btn" id="hide-${lesson.id}" onclick="toggleText('${lesson.id}')">日文隱藏</button>
+          <button class="mini-btn" id="fg-${lesson.id}" onclick="toggleFurigana('${lesson.id}')">平假名</button>
+          <button class="mini-btn" id="zh-${lesson.id}" onclick="toggleChinese('${lesson.id}')">中文</button>
+        </div>
+        <div class="header-right-btns">
+          <button class="play-all-btn" id="playall-${lesson.id}" onclick="playAll('${lesson.id}')">
+            ${PLAY_ICON} 全部再生
+          </button>
+        </div>
+      </div>
+      <div class="utterances">${uttHTML}</div>
+      <div class="speed-controls">
+        <span class="speed-label">速度</span>${speedBtns}
+        ${grammarBtn}
+        <button class="repeat-btn" id="repeat-${lesson.id}" onclick="toggleRepeat('${lesson.id}')">↺ リピート</button>
+      </div>
+      ${grammarHTML}
+    `;
+    container.appendChild(card);
+  });
+}
+
+buildUI();
+</script>
+</body>
+</html>

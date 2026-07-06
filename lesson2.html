@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowing Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --ink: #1a1a2e; --paper: #f7f5f0; --accent: #4a6fa5;
+    --accent-light: #e8eef7; --muted: #8a8a9a; --border: #dddbd4;
+    --card: #ffffff; --a-color: #2d6a4f; --b-color: #6b3fa0;
+    --a-bg: #eaf4ee; --b-bg: #f2ecfb; --speed-bg: #fafaf8;
+  }
+  [data-theme="dark"] {
+    --ink: #e8e6e1; --paper: #141418; --accent: #6b9fd4;
+    --accent-light: #1e2a38; --muted: #666672; --border: #2e2e38;
+    --card: #1e1e26; --a-color: #5bbf85; --b-color: #b07ee8;
+    --a-bg: #1a2e22; --b-bg: #251a35; --speed-bg: #191920;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; padding: 1.5rem 1rem 4rem; transition: background 0.2s, color 0.2s; }
+
+  /* Header */
+  header { max-width: 660px; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .site-title { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 500; letter-spacing: 0.08em; color: var(--ink); text-transform: uppercase; }
+  .dark-toggle { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .dark-toggle svg { width: 16px; height: 16px; }
+  .dark-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Cards */
+  .lessons { max-width: 660px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .lesson-card { background: var(--card); border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; transition: box-shadow 0.2s, background 0.2s, border-color 0.2s; }
+  .lesson-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+  /* Lesson header */
+  .lesson-header { padding: 0.55rem 1rem 0.55rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .header-right-btns { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+  .lesson-num { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+
+  /* Bookmark */
+  .bookmark-btn { width: 22px; height: 22px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; color: var(--border); transition: color 0.15s, transform 0.1s; flex-shrink: 0; }
+  .bookmark-btn:hover { color: var(--muted); transform: scale(1.1); }
+  .bookmark-btn.marked { color: #e53935; }
+  .bookmark-btn svg { width: 14px; height: 18px; }
+
+  /* Small toggle buttons */
+  .mini-btn { font-family: 'Noto Sans JP', sans-serif; font-size: 0.63rem; padding: 0.15rem 0.45rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mini-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* Play all button */
+  .play-all-btn { display: flex; align-items: center; gap: 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 0.22rem 0.65rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .play-all-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn.playing { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn svg { width: 9px; height: 9px; flex-shrink: 0; }
+
+  /* Utterances */
+  .utterances { display: flex; flex-direction: column; }
+  .utterance { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .utterance:last-child { border-bottom: none; }
+  .utterance.is-playing { background: var(--accent-light); }
+  .speaker-badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; margin-top: 0.15rem; }
+  .speaker-A .speaker-badge { background: var(--a-bg); color: var(--a-color); }
+  .speaker-B .speaker-badge { background: var(--b-bg); color: var(--b-color); }
+  .text-area { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+  .utterance-text { font-size: 0.95rem; line-height: 1.6; transition: opacity 0.25s, filter 0.25s; }
+  .utterance-text.hidden { opacity: 0; filter: blur(6px); pointer-events: none; user-select: none; }
+  .sub-text { font-size: 0.8rem; line-height: 1.5; color: var(--muted); display: none; }
+  .sub-text.visible { display: block; }
+  ruby { ruby-align: center; }
+  rt { font-size: 0.55em; color: var(--muted); }
+
+  .play-btn { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: var(--accent-light); color: var(--accent); margin-top: 0.05rem; }
+  .play-btn:hover { background: var(--accent); color: #fff; transform: scale(1.05); }
+  .play-btn.playing { background: var(--accent); color: #fff; }
+  .play-btn svg { width: 15px; height: 15px; }
+
+  /* Speed controls */
+  .speed-controls { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem; border-top: 1px solid var(--border); background: var(--speed-bg); transition: background 0.2s; flex-wrap: wrap; }
+  .speed-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-right: 0.2rem; }
+  .speed-btn { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.18rem 0.45rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .speed-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .repeat-btn { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .repeat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="site-title">Shadowing 2</span>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="切換深色模式">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+</header>
+
+<div class="lessons" id="lessons"></div>
+
+<script>
+const data = [
+  {
+    id: "2-1",
+    utterances: [
+      {
+        speaker: "A",
+        text: "このリュックおしゃれ。紺とオレンジとどっちがいいかな。",
+        furigana: "このリュックおしゃれ。<ruby>紺<rt>こん</rt></ruby>とオレンジとどっちがいいかな。",
+        chinese: "這個背包好時尚。深藍色和橘色，哪個比較好呢?",
+        audio: "audio/02-01_1.mp3"
+      },
+      {
+        speaker: "B",
+        text: "どっちでもいいじゃない?それよりリュックは機能性だよ。優柔不断だな。",
+        furigana: "どっちでもいいじゃない?それよりリュックは<ruby>機能性<rt>きのうせい</rt></ruby>だよ。<ruby>優柔不断<rt>ゆうじゅうふだん</rt></ruby>だな。",
+        chinese: "哪個都可以吧?比起顏色，背包更重要的是機能性啦。你真是猶豫不決耶。",
+        audio: "audio/02-01_2.mp3"
+      },
+      {
+        speaker: "A",
+        text: "そうスパッと決められないよ。うーん、どうしようかな。",
+        furigana: "そうスパッと<ruby>決<rt>き</rt></ruby>められないよ。うーん、どうしようかな。",
+        chinese: "就是沒辦法乾脆地決定啊。嗯～該怎麼辦呢。",
+        audio: "audio/02-01_3.mp3"
+      }
+    ]
+  },
+  {
+    id: "2-2",
+    utterances: [
+      {
+        speaker: "A",
+        text: "内定をもらったんだけど、実は他の会社からの内定も待ってるとこでさ。",
+        furigana: "<ruby>内定<rt>ないてい</rt></ruby>をもらったんだけど、<ruby>実<rt>じつ</rt></ruby>は<ruby>他<rt>ほか</rt></ruby>の<ruby>会社<rt>かいしゃ</rt></ruby>からの<ruby>内定<rt>ないてい</rt></ruby>も<ruby>待<rt>ま</rt></ruby>ってるとこでさ。",
+        chinese: "我收到內定(錄取通知)了，不過其實我還在等其他公司的內定。",
+        audio: "audio/02-02_1.mp3"
+      },
+      {
+        speaker: "B",
+        text: "でも、その待ってる会社から内定がもらえるとは限らないよね。",
+        furigana: "でも、その<ruby>待<rt>ま</rt></ruby>ってる<ruby>会社<rt>かいしゃ</rt></ruby>から<ruby>内定<rt>ないてい</rt></ruby>がもらえるとは<ruby>限<rt>かぎ</rt></ruby>らないよね。",
+        chinese: "但是，也不一定能拿到那家還在等的公司的內定吧。",
+        audio: "audio/02-02_2.mp3"
+      },
+      {
+        speaker: "A",
+        text: "確かにそうなんだよ。だから迷ってるんだよ。",
+        furigana: "<ruby>確<rt>たし</rt></ruby>かにそうなんだよ。だから<ruby>迷<rt>まよ</rt></ruby>ってるんだよ。",
+        chinese: "確實是這樣沒錯。所以我才在猶豫啊。",
+        audio: "audio/02-02_3.mp3"
+      }
+    ]
+  },
+  {
+    id: "2-3",
+    utterances: [
+      {
+        speaker: "A",
+        text: "今度の週末に映画に行かない?",
+        furigana: "<ruby>今度<rt>こんど</rt></ruby>の<ruby>週末<rt>しゅうまつ</rt></ruby>に<ruby>映画<rt>えいが</rt></ruby>に<ruby>行<rt>い</rt></ruby>かない?",
+        chinese: "這個週末要不要去看電影?",
+        audio: "audio/02-03_1.mp3"
+      },
+      {
+        speaker: "B",
+        text: "今度の週末?うーん、急に言われてもな。来週の頭にレポート出さなきゃなんなくて、それが終わるかどうか。",
+        furigana: "<ruby>今度<rt>こんど</rt></ruby>の<ruby>週末<rt>しゅうまつ</rt></ruby>?うーん、<ruby>急<rt>きゅう</rt></ruby>に<ruby>言<rt>い</rt></ruby>われてもな。<ruby>来週<rt>らいしゅう</rt></ruby>の<ruby>頭<rt>あたま</rt></ruby>にレポート<ruby>出<rt>だ</rt></ruby>さなきゃなんなくて、それが<ruby>終<rt>お</rt></ruby>わるかどうか。",
+        chinese: "這個週末?嗯～突然這麼說我也…下週初要交報告，不確定能不能寫完。",
+        audio: "audio/02-03_2.mp3"
+      }
+    ]
+  },
+  {
+    id: "2-4",
+    utterances: [
+      {
+        speaker: "A",
+        text: "今週末の飲み会行く?",
+        furigana: "<ruby>今週末<rt>こんしゅうまつ</rt></ruby>の<ruby>飲<rt>の</rt></ruby>み<ruby>会<rt>かい</rt></ruby><ruby>行<rt>い</rt></ruby>く?",
+        chinese: "這週末的聚餐你要去嗎?",
+        audio: "audio/02-04_1.mp3"
+      },
+      {
+        speaker: "B",
+        text: "実はそんな気分じゃないんだ。こないだ先輩と喧嘩しちゃっただろう。",
+        furigana: "<ruby>実<rt>じつ</rt></ruby>はそんな<ruby>気分<rt>きぶん</rt></ruby>じゃないんだ。こないだ<ruby>先輩<rt>せんぱい</rt></ruby>と<ruby>喧嘩<rt>けんか</rt></ruby>しちゃっただろう。",
+        chinese: "其實我沒什麼心情去。前幾天我跟前輩吵架了吧。",
+        audio: "audio/02-04_2.mp3"
+      },
+      {
+        speaker: "A",
+        text: "先輩はそんなこと気にしてないって。吉村は来るのかって言ってたよ。",
+        furigana: "<ruby>先輩<rt>せんぱい</rt></ruby>はそんなこと<ruby>気<rt>き</rt></ruby>にしてないって。<ruby>吉村<rt>よしむら</rt></ruby>は<ruby>来<rt>く</rt></ruby>るのかって<ruby>言<rt>い</rt></ruby>ってたよ。",
+        chinese: "前輩說他根本沒在意那件事。他還問吉村會不會來呢。",
+        audio: "audio/02-04_3.mp3"
+      },
+      {
+        speaker: "B",
+        text: "うん、でも、顔を合わせづらいからな。やっぱり遠慮しとくよ。",
+        furigana: "うん、でも、<ruby>顔<rt>かお</rt></ruby>を<ruby>合<rt>あ</rt></ruby>わせづらいからな。やっぱり<ruby>遠慮<rt>えんりょ</rt></ruby>しとくよ。",
+        chinese: "嗯，不過，還是有點不好意思見面啦。我還是算了吧。",
+        audio: "audio/02-04_4.mp3"
+      }
+    ]
+  },
+  {
+    id: "2-5",
+    utterances: [
+      {
+        speaker: "A",
+        text: "高階君に付き合ってって言われちゃったんだけど",
+        furigana: "<ruby>高階<rt>たかはし</rt></ruby><ruby>君<rt>くん</rt></ruby>に<ruby>付<rt>つ</rt></ruby>き<ruby>合<rt>あ</rt></ruby>ってって<ruby>言<rt>い</rt></ruby>われちゃったんだけど",
+        chinese: "高階跟我說想跟我交往，不過…",
+        audio: "audio/02-05_1.mp3"
+      },
+      {
+        speaker: "B",
+        text: "告白されたんだ。いいなあ。で、なんて返事したの?",
+        furigana: "<ruby>告白<rt>こくはく</rt></ruby>されたんだ。いいなあ。で、なんて<ruby>返事<rt>へんじ</rt></ruby>したの?",
+        chinese: "被告白了呀!真好耶。那你怎麼回答的?",
+        audio: "audio/02-05_2.mp3"
+      },
+      {
+        speaker: "A",
+        text: "まだ迷ってて、友達から始めましょうっていうのは駄目かな。",
+        furigana: "まだ<ruby>迷<rt>まよ</rt></ruby>ってて、<ruby>友達<rt>ともだち</rt></ruby>から<ruby>始<rt>はじ</rt></ruby>めましょうっていうのは<ruby>駄目<rt>だめ</rt></ruby>かな。",
+        chinese: "我還在猶豫，跟他說「要不要先從朋友開始」這樣可以嗎?",
+        audio: "audio/02-05_3.mp3"
+      },
+      {
+        speaker: "B",
+        text: "いや、別に駄目じゃないんじゃない?",
+        furigana: "いや、<ruby>別<rt>べつ</rt></ruby>に<ruby>駄目<rt>だめ</rt></ruby>じゃないんじゃない?",
+        chinese: "不會啊，這樣也沒什麼不行的吧?",
+        audio: "audio/02-05_4.mp3"
+      }
+    ]
+  }
+];
+
+let speeds = {};
+let repeats = {};
+let textHidden = {};
+let chineseVisible = {};
+let furiganaVisible = {};
+let currentAudio = null;
+let currentBtn = null;
+let currentRow = null;
+let playAllQueue = null;
+let isDark = false;
+
+const PLAY_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+const STOP_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14"/></svg>';
+const MOON_SVG   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const SUN_SVG    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const BOOKMARK_SVG = `<svg viewBox="0 0 16 20" fill="currentColor"><path d="M2 0h12a2 2 0 0 1 2 2v18l-8-4-8 4V2a2 2 0 0 1 2-2z"/></svg>`;
+
+let bookmarks = JSON.parse(localStorage.getItem('shadowing-bookmarks') || '{}');
+
+function toggleDark() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('darkToggle').innerHTML = isDark ? SUN_SVG : MOON_SVG;
+}
+
+function toggleBookmark(lessonId) {
+  bookmarks[lessonId] = !bookmarks[lessonId];
+  if (bookmarks[lessonId]) {
+    data.forEach(l => {
+      if (l.id !== lessonId) {
+        bookmarks[l.id] = false;
+        const b = document.getElementById('bookmark-' + l.id);
+        if (b) b.classList.remove('marked');
+      }
+    });
+  }
+  localStorage.setItem('shadowing-bookmarks', JSON.stringify(bookmarks));
+  document.getElementById('bookmark-' + lessonId).classList.toggle('marked', bookmarks[lessonId]);
+}
+
+function stopAll() {
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (playAllQueue) {
+    const allBtn = document.getElementById('playall-' + playAllQueue.lessonId);
+    if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+    playAllQueue = null;
+  }
+}
+
+function playAudio(lessonId, uttIndex, fromPlayAll) {
+  const lesson = data.find(l => l.id === lessonId);
+  const btn = document.getElementById('btn-' + lessonId + '-' + uttIndex);
+  const row = document.getElementById('utt-' + lessonId + '-' + uttIndex);
+  const isSame = currentAudio && currentAudio._lessonId === lessonId && currentAudio._uttIndex === uttIndex;
+
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (!fromPlayAll && playAllQueue) {
+    const allBtn = document.getElementById('playall-' + playAllQueue.lessonId);
+    if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+    playAllQueue = null;
+  }
+
+  if (isSame && !fromPlayAll) return;
+
+  const audio = new Audio(lesson.utterances[uttIndex].audio);
+  audio.playbackRate = speeds[lessonId];
+  audio._lessonId = lessonId;
+  audio._uttIndex = uttIndex;
+
+  btn.innerHTML = PAUSE_ICON;
+  btn.classList.add('playing');
+  row.classList.add('is-playing');
+  currentAudio = audio; currentBtn = btn; currentRow = row;
+
+  audio.play().catch(e => console.error('Play failed:', e));
+
+  audio.onended = () => {
+    btn.innerHTML = PLAY_ICON; btn.classList.remove('playing');
+    row.classList.remove('is-playing');
+    currentAudio = null; currentBtn = null; currentRow = null;
+
+    if (playAllQueue && playAllQueue.lessonId === lessonId) {
+      const nextIndex = uttIndex + 1;
+      if (nextIndex < lesson.utterances.length) {
+        playAllQueue.index = nextIndex;
+        setTimeout(() => playAudio(lessonId, nextIndex, true), 300);
+      } else {
+        const allBtn = document.getElementById('playall-' + lessonId);
+        if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+        playAllQueue = null;
+        if (repeats[lessonId]) setTimeout(() => playAll(lessonId), 400);
+      }
+    } else if (repeats[lessonId] && !playAllQueue) {
+      playAudio(lessonId, uttIndex, false);
+    }
+  };
+}
+
+function playAll(lessonId) {
+  const allBtn = document.getElementById('playall-' + lessonId);
+  if (playAllQueue && playAllQueue.lessonId === lessonId) { stopAll(); return; }
+  stopAll();
+  playAllQueue = { lessonId, index: 0 };
+  allBtn.innerHTML = STOP_ICON + ' 停止';
+  allBtn.classList.add('playing');
+  playAudio(lessonId, 0, true);
+}
+
+function setSpeed(lessonId, speed) {
+  speeds[lessonId] = speed;
+  if (currentAudio && currentAudio._lessonId === lessonId) currentAudio.playbackRate = speed;
+  [0.75, 1.0, 1.25, 1.5].forEach(s => {
+    const b = document.getElementById('speed-' + lessonId + '-' + s.toString().replace('.', '_'));
+    if (b) b.classList.toggle('active', s === speed);
+  });
+}
+
+function toggleRepeat(lessonId) {
+  repeats[lessonId] = !repeats[lessonId];
+  document.getElementById('repeat-' + lessonId).classList.toggle('active', repeats[lessonId]);
+}
+
+function toggleText(lessonId) {
+  textHidden[lessonId] = !textHidden[lessonId];
+  const hidden = textHidden[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .utterance-text')
+    .forEach(el => el.classList.toggle('hidden', hidden));
+  const btn = document.getElementById('hide-' + lessonId);
+  btn.textContent = hidden ? '日文顯示' : '日文隱藏';
+  btn.classList.toggle('active', hidden);
+}
+
+function toggleChinese(lessonId) {
+  chineseVisible[lessonId] = !chineseVisible[lessonId];
+  const visible = chineseVisible[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .sub-text')
+    .forEach(el => el.classList.toggle('visible', visible));
+  const btn = document.getElementById('zh-' + lessonId);
+  btn.classList.toggle('active', visible);
+}
+
+function toggleFurigana(lessonId) {
+  furiganaVisible[lessonId] = !furiganaVisible[lessonId];
+  const visible = furiganaVisible[lessonId];
+  const lesson = data.find(l => l.id === lessonId);
+  lesson.utterances.forEach((u, i) => {
+    const el = document.getElementById('text-' + lessonId + '-' + i);
+    if (el) el.innerHTML = visible ? u.furigana : u.text;
+  });
+  const btn = document.getElementById('fg-' + lessonId);
+  btn.classList.toggle('active', visible);
+}
+
+function buildUI() {
+  const container = document.getElementById('lessons');
+  data.forEach(lesson => {
+    speeds[lesson.id] = 1.0;
+    repeats[lesson.id] = false;
+    textHidden[lesson.id] = false;
+    chineseVisible[lesson.id] = false;
+    furiganaVisible[lesson.id] = false;
+
+    const card = document.createElement('div');
+    card.className = 'lesson-card';
+    card.id = 'card-' + lesson.id.replace('-', '_');
+
+    const uttHTML = lesson.utterances.map((u, i) => `
+      <div class="utterance speaker-${u.speaker}" id="utt-${lesson.id}-${i}">
+        <div class="speaker-badge">${u.speaker}</div>
+        <div class="text-area">
+          <div class="utterance-text" id="text-${lesson.id}-${i}">${u.text}</div>
+          <div class="sub-text">${u.chinese}</div>
+        </div>
+        <button class="play-btn" id="btn-${lesson.id}-${i}" onclick="playAudio('${lesson.id}', ${i}, false)" aria-label="再生">
+          ${PLAY_ICON}
+        </button>
+      </div>
+    `).join('');
+
+    const speedBtns = [0.75, 1.0, 1.25, 1.5].map(s =>
+      `<button class="speed-btn ${s === 1.0 ? 'active' : ''}" id="speed-${lesson.id}-${s.toString().replace('.', '_')}" onclick="setSpeed('${lesson.id}', ${s})">${s}x</button>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="lesson-header">
+        <div class="header-left">
+          <button class="bookmark-btn ${bookmarks[lesson.id] ? 'marked' : ''}" id="bookmark-${lesson.id}" onclick="toggleBookmark('${lesson.id}')" title="書籤">${BOOKMARK_SVG}</button>
+          <span class="lesson-num">${lesson.id}</span>
+          <button class="mini-btn" id="hide-${lesson.id}" onclick="toggleText('${lesson.id}')">日文隱藏</button>
+          <button class="mini-btn" id="fg-${lesson.id}" onclick="toggleFurigana('${lesson.id}')">平假名</button>
+          <button class="mini-btn" id="zh-${lesson.id}" onclick="toggleChinese('${lesson.id}')">中文</button>
+        </div>
+        <div class="header-right-btns">
+          <button class="play-all-btn" id="playall-${lesson.id}" onclick="playAll('${lesson.id}')">
+            ${PLAY_ICON} 全部再生
+          </button>
+        </div>
+      </div>
+      <div class="utterances">${uttHTML}</div>
+      <div class="speed-controls">
+        <span class="speed-label">速度</span>${speedBtns}
+        <button class="repeat-btn" id="repeat-${lesson.id}" onclick="toggleRepeat('${lesson.id}')">↺ リピート</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+buildUI();
+</script>
+</body>
+</html>
