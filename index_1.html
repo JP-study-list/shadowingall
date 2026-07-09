@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日文 Shadowing 跟讀練習</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f5f3; --surface: #fff; --border: #e0e0e0;
+    --text: #1a1a1a; --text2: #666; --text3: #999;
+    --gold: #b8860b; --gold-soft: rgba(184,134,11,.1); --section: #888;
+    --heat0: #ebebe8; --heat1: #c6e48b; --heat2: #7bc96f; --heat3: #239a3b; --heat4: #196127;
+    --bar: #e3e2dd;
+  }
+  body.dark {
+    --bg: #111110; --surface: #1c1c1a; --border: #2e2e2b;
+    --text: #f0ede8; --text2: #a8a69e; --text3: #777;
+    --gold: #d4a94e; --gold-soft: rgba(212,169,78,.12); --section: #aaa;
+    --heat0: #22221f; --heat1: #0e4429; --heat2: #006d32; --heat3: #26a641; --heat4: #39d353;
+    --bar: #2e2e2b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+    transition: background .2s, color .2s;
+  }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 264px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px 30px;
+    transition: margin-left .25s ease;
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar.collapsed { margin-left: -264px; }
+
+  .sidebar-title {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+    color: var(--section); margin-bottom: 14px;
+  }
+
+  .side-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .side-block-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--section); margin-bottom: 10px;
+  }
+
+  /* heatmap */
+  .heat-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .heat-month { font-size: 13px; font-weight: 600; }
+  .heat-nav {
+    width: 24px; height: 24px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .heat-nav:hover { border-color: var(--gold); color: var(--text); }
+  .heat-nav:disabled { opacity: .3; cursor: default; }
+  .heat-nav:disabled:hover { border-color: var(--border); color: var(--text2); }
+
+  .heat-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px; margin-bottom: 4px;
+  }
+  .heat-weekdays span { font-size: 9px; color: var(--text3); text-align: center; }
+  .heat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .heat-cell { aspect-ratio: 1; border-radius: 4px; background: var(--heat0); position: relative; }
+  .heat-cell.empty { background: transparent; }
+  .heat-cell.l1 { background: var(--heat1); }
+  .heat-cell.l2 { background: var(--heat2); }
+  .heat-cell.l3 { background: var(--heat3); }
+  .heat-cell.l4 { background: var(--heat4); }
+  .heat-cell.today { outline: 1.5px solid var(--gold); outline-offset: 1px; }
+  .heat-cell:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg);
+    font-size: 10px; padding: 3px 7px; border-radius: 5px;
+    white-space: nowrap; z-index: 10; pointer-events: none;
+  }
+
+  /* stats */
+  .stat-row { display: flex; gap: 8px; }
+  .stat-row + .stat-row { margin-top: 8px; }
+  .stat-box {
+    flex: 1; text-align: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 4px;
+  }
+  .stat-num { font-size: 20px; font-weight: 700; color: var(--gold); }
+  .stat-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  /* part bars */
+  .part-bars { display: flex; flex-direction: column; gap: 9px; }
+  .part-bar-row { display: flex; align-items: center; gap: 8px; }
+  .part-bar-label { width: 42px; flex-shrink: 0; font-size: 10px; color: var(--text2); font-weight: 600; }
+  .part-bar-track { flex: 1; height: 7px; background: var(--bar); border-radius: 4px; overflow: hidden; }
+  .part-bar-fill { height: 100%; background: var(--gold); border-radius: 4px; width: 0%; transition: width .5s ease; }
+  .part-bar-count { width: 30px; text-align: right; font-size: 10px; color: var(--text2); }
+
+  /* recent */
+  .recent-list { display: flex; flex-direction: column; gap: 6px; }
+  .recent-item {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    font-size: 11.5px; color: var(--text2);
+    padding: 6px 9px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .recent-item .r-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recent-item .r-time { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .recent-empty { font-size: 11.5px; color: var(--text3); }
+
+  /* random button */
+  .random-btn {
+    width: 100%; padding: 12px;
+    border-radius: 10px; border: 1px solid var(--gold);
+    background: transparent; color: var(--gold);
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .15s, color .15s;
+  }
+  .random-btn:hover { background: var(--gold); color: var(--surface); }
+
+  /* sync */
+  .sync-status {
+    font-size: 11px; color: var(--text3);
+    margin-bottom: 8px; line-height: 1.5; word-break: break-all;
+  }
+  .sync-status strong { color: var(--text); }
+  .sync-status .ok { color: var(--heat3); font-weight: 600; }
+  .sync-status .off { color: var(--text3); }
+  .sync-code-row { display: flex; gap: 6px; }
+  .sync-input {
+    flex: 1; min-width: 0; padding: 8px 10px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-family: inherit; font-size: 12px;
+  }
+  .sync-input:focus { outline: none; border-color: var(--gold); }
+  .sync-btn {
+    padding: 8px 12px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    font-family: inherit; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .sync-btn:hover { border-color: var(--gold); color: var(--text); }
+  .sync-hint { font-size: 10px; color: var(--text3); margin-top: 8px; line-height: 1.6; }
+
+  /* ---------- Main ---------- */
+  .main-area { flex: 1; padding: 40px 20px 60px; min-width: 0; }
+  .container { max-width: 760px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 36px; position: relative; }
+  header h1 { font-weight: 700; font-size: clamp(28px, 6vw, 42px); letter-spacing: 0.02em; }
+  header p { margin-top: 10px; color: var(--text2); font-size: 13px; }
+
+  .section { margin-bottom: 32px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    color: var(--section);
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .section-count { font-size: 10px; color: var(--text3); letter-spacing: .04em; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .card {
+    display: block; text-decoration: none; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px; transition: transform .15s, border-color .15s;
+    cursor: pointer;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--gold); }
+  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .card-num {
+    font-size: 11px; font-weight: 600; color: var(--gold);
+    letter-spacing: 0.06em;
+  }
+  .count-badge {
+    font-size: 10px; font-weight: 600; color: var(--gold);
+    background: var(--gold-soft); padding: 2px 8px; border-radius: 99px;
+  }
+  .count-badge.zero { color: var(--text3); background: transparent; border: 1px dashed var(--border); font-weight: 400; }
+  .card-title { font-weight: 600; font-size: 16px; margin-bottom: 5px; line-height: 1.4; }
+  .card-sub { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .card-last { font-size: 10px; color: var(--text3); margin-top: 8px; }
+  footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text3); }
+
+  .toolbar { position: absolute; top: 0; right: 0; display: flex; gap: 8px; align-items: center; }
+  .tool-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .tool-btn:hover { border-color: var(--gold); color: var(--text); }
+  .tool-btn svg { display: block; }
+
+  .sidebar-toggle { position: absolute; top: 0; left: 0; }
+
+  /* List mode */
+  .grid.list-mode { grid-template-columns: 1fr; gap: 6px; }
+  .grid.list-mode .card { display: flex; align-items: center; gap: 14px; padding: 12px 18px; }
+  .grid.list-mode .card-top { margin-bottom: 0; gap: 10px; flex-shrink: 0; }
+  .grid.list-mode .card-title { font-size: 14px; margin-bottom: 0; flex-shrink: 0; min-width: 130px; }
+  .grid.list-mode .card-sub { font-size: 12px; flex: 1; }
+  .grid.list-mode .card-last { margin-top: 0; margin-left: auto; flex-shrink: 0; }
+
+  @media (max-width: 720px) {
+    .sidebar {
+      position: fixed; z-index: 50; left: 0; top: 0;
+      box-shadow: 4px 0 20px rgba(0,0,0,.15);
+    }
+    .sidebar.collapsed { margin-left: -280px; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar collapsed" id="sidebar">
+    <div class="sidebar-title">學習紀錄</div>
+
+    <div class="side-block">
+      <div class="heat-head">
+        <button class="heat-nav" id="heatPrev" title="上個月">‹</button>
+        <span class="heat-month" id="heatMonth"></span>
+        <button class="heat-nav" id="heatNext" title="下個月">›</button>
+      </div>
+      <div class="heat-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="heat-grid" id="heatGrid"></div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">統計</div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-num" id="statStreak">0</div>
+          <div class="stat-label">連續天數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statDays">0</div>
+          <div class="stat-label">累積天數</div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">總學習次數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statLessons">0/25</div>
+          <div class="stat-label">已學課程</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">章節學習次數</div>
+      <div class="part-bars">
+        <div class="part-bar-row"><span class="part-bar-label">Part 1</span><div class="part-bar-track"><div class="part-bar-fill" id="bar-part1"></div></div><span class="part-bar-count" id="barcount-part1">0</span></div>
+        <div class="part-bar-row"><span class="part-bar-label">Part 2</span><div class="part-bar-track"><div class="part-bar-fill" id="bar-part2"></div></div><span class="part-bar-count" id="barcount-part2">0</span></div>
+        <div class="part-bar-row"><span class="part-bar-label">Part 3</span><div class="part-bar-track"><div class="part-bar-fill" id="bar-part3"></div></div><span class="part-bar-count" id="barcount-part3">0</span></div>
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">最近學習</div>
+      <div class="recent-list" id="recentList">
+        <div class="recent-empty">尚無學習紀錄</div>
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">隨機學習</div>
+      <button class="random-btn" id="randomBtn">隨機挑一課</button>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">跨裝置同步</div>
+      <div class="sync-status" id="syncStatus">同步碼載入中…</div>
+      <div class="sync-code-row">
+        <input class="sync-input" id="syncInput" placeholder="輸入同步碼（6字以上）" maxlength="30">
+        <button class="sync-btn" id="syncApply">套用</button>
+      </div>
+      <div class="sync-hint">與「日文情境入口」共用同一組同步碼。在另一台裝置輸入相同同步碼，學習紀錄即可同步。</div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main-area">
+    <div class="container">
+      <header>
+        <div class="sidebar-toggle">
+          <button class="tool-btn" title="學習紀錄" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+          </button>
+        </div>
+        <div class="toolbar">
+          <button class="tool-btn" onclick="toggleLayout()" title="切換顯示模式">
+            <svg id="icon-list" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+            <svg id="icon-grid" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          </button>
+          <button class="tool-btn" onclick="toggleTheme()" title="切換深色模式">
+            <svg id="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg id="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+        </div>
+        <h1>日文 Shadowing 跟讀練習</h1>
+        <p>點選課程，前往對應的跟讀練習頁面</p>
+      </header>
+
+      <div id="sections"></div>
+
+      <footer>持續更新中</footer>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ================= Firebase（與情境入口共用同一專案） ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBB0uniuOE0OFG_xj9Ld8eM64PpNO2M3Vk",
+  authDomain: "jpsituations.firebaseapp.com",
+  projectId: "jpsituations",
+  storageBucket: "jpsituations.firebasestorage.app",
+  messagingSenderId: "52165806961",
+  appId: "1:52165806961:web:59fc91bb40645eb37844d0"
+};
+
+/* 動態載入：就算 Firebase 載不進來（離線、沙盒環境），頁面其他功能照常運作 */
+let db = null, fbDoc = null, fbGetDoc = null, fbSetDoc = null;
+async function initFirebase() {
+  try {
+    const [appMod, fsMod] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
+    ]);
+    const app = appMod.initializeApp(firebaseConfig);
+    db = fsMod.getFirestore(app);
+    fbDoc = fsMod.doc; fbGetDoc = fsMod.getDoc; fbSetDoc = fsMod.setDoc;
+    return true;
+  } catch (e) {
+    console.warn("Firebase 載入失敗，改用本機模式", e);
+    return false;
+  }
+}
+
+/* ================= 安全儲存（沙盒環境擋 localStorage 時退回記憶體） ================= */
+const memStore = {};
+function sGet(key) {
+  try { return localStorage.getItem(key); } catch { return memStore[key] ?? null; }
+}
+function sSet(key, val) {
+  try { localStorage.setItem(key, val); } catch { memStore[key] = val; }
+}
+window.sGet = sGet; window.sSet = sSet;
+
+/* ================= 課程資料 ================= */
+const parts = [
+  { id: "part1", label: "PART 1 ── 日劇般的情緒表達", lessons: [
+    { n: 1,  title: "期待・雀躍・興奮",        sub: "心情雀躍、滿懷期待時的語感練習" },
+    { n: 2,  title: "猶豫・不確定・回想",      sub: "拿不定主意與回憶過往情境的練習" },
+    { n: 3,  title: "身體不舒服・心裡不舒服",  sub: "身心不適、抱怨狀況時的語感練習" },
+    { n: 4,  title: "玩笑・裝傻・揶揄",        sub: "開玩笑、耍寶吐槽的輕鬆語氣練習" },
+    { n: 5,  title: "安慰・商量・建議",        sub: "傾聽同理與給予建議情境的練習" },
+    { n: 6,  title: "讚美・回應讚美",          sub: "稱讚他人與謙虛回應時的語感練習" },
+    { n: 7,  title: "生氣・不耐煩・抱怨",      sub: "意見不合、表達不滿情境的練習" }
+  ]},
+  { id: "part2", label: "PART 2 ── 旅行 & 服務業用語", lessons: [
+    { n: 8,  title: "旅行中的巧遇・計畫",      sub: "旅途中偶遇與排定行程的會話練習" },
+    { n: 9,  title: "旅行中的美景・美食",      sub: "讚嘆風景與品嚐美食時的語感練習" },
+    { n: 10, title: "旅行中的突發狀況",        sub: "遇到麻煩、緊急應對情境的練習" },
+    { n: 11, title: "旅行的好壞心情",          sub: "旅途中開心與失落情緒的語感練習" },
+    { n: 12, title: "旅遊零售業",              sub: "購物詢價、試用與結帳的會話練習" },
+    { n: 13, title: "旅遊餐飲業",              sub: "餐廳點餐、詢問與用餐的會話練習" },
+    { n: 14, title: "旅遊住宿業",              sub: "飯店入住、退房與設施詢問練習" },
+    { n: 15, title: "旅遊交通業",              sub: "搭車問路與交通指引的會話練習" },
+    { n: 16, title: "機場・巴士・地鐵・廣播",  sub: "交通設施廣播與指示用語的練習" }
+  ]},
+  { id: "part3", label: "PART 3 ── 日本人的生活日常", lessons: [
+    { n: 17, title: "家庭生活・夫妻・親子",    sub: "家人之間日常對話的語感練習" },
+    { n: 18, title: "與鄰居的日常",            sub: "鄰里打招呼與寒暄的會話練習" },
+    { n: 19, title: "學校師生間",              sub: "師生對話與學校場合的語感練習" },
+    { n: 20, title: "學校同學間",              sub: "同學互動、討論與玩笑的會話練習" },
+    { n: 21, title: "結交新朋友",              sub: "初次見面與自我介紹的語感練習" },
+    { n: 22, title: "送禮・拜訪老友",          sub: "拜訪與贈禮場合常用表達的練習" },
+    { n: 23, title: "職場和同事互動",          sub: "辦公室同事間日常對話的語感練習" },
+    { n: 24, title: "職場和客戶互動",          sub: "商務往來與接待客戶的敬語練習" },
+    { n: 25, title: "會議・簡報・主持",        sub: "開會發言與簡報主持的正式用語練習" }
+  ]}
+];
+const TOTAL_LESSONS = 25;
+const lessonIndex = {};
+parts.forEach(p => p.lessons.forEach(l => lessonIndex["lesson" + l.n] = { title: l.title, partId: p.id, n: l.n }));
+
+/* ================= 建立卡片 ================= */
+const pad = n => String(n).padStart(2, "0");
+document.getElementById("sections").innerHTML = parts.map(p => `
+  <div class="section">
+    <div class="section-label"><span>${p.label}</span><span class="section-count" id="seccount-${p.id}"></span></div>
+    <div class="grid">
+      ${p.lessons.map(l => `
+        <a class="card" href="./lesson${l.n}.html" data-lesson="lesson${l.n}">
+          <div class="card-top">
+            <span class="card-num">${pad(l.n)}</span>
+            <span class="count-badge zero" id="badge-lesson${l.n}">未學習</span>
+          </div>
+          <div class="card-title">${l.title}</div>
+          <div class="card-sub">${l.sub}</div>
+          <div class="card-last" id="last-lesson${l.n}"></div>
+        </a>`).join("")}
+    </div>
+  </div>`).join("");
+
+/* ================= 學習紀錄核心 =================
+   本機儲存：
+     shadowing-days    { "2026-07-09": 次數 }        → 熱圖、連續/累積天數
+     shadowing-lessons { lesson1: {count, last} }     → 每課次數
+     shadowing-logs    [ {id, ts}, ... 最新在前 ]     → 最近學習
+   雲端：Firestore 文件 shadowing/{同步碼}，一份文件存以上三種資料
+   同步碼沿用情境入口的 jp-hub-synccode（同網域自動共用） */
+const LS_DAYS    = "shadowing-days";
+const LS_LESSONS = "shadowing-lessons";
+const LS_LOGS    = "shadowing-logs";
+const LS_CODE    = "jp-hub-synccode";
+const MAX_LOGS   = 60;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function loadLS(key, fallback) {
+  try { return JSON.parse(sGet(key)) || fallback; }
+  catch { return fallback; }
+}
+
+function genCode() {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  let s = "";
+  for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+let syncCode = sGet(LS_CODE);
+if (!syncCode) {
+  syncCode = genCode();
+  sSet(LS_CODE, syncCode);
+}
+
+let days    = loadLS(LS_DAYS, {});
+let lessons = loadLS(LS_LESSONS, {});
+let logs    = loadLS(LS_LOGS, []);
+let cloudOk = false;
+
+function saveLocal() {
+  sSet(LS_DAYS, JSON.stringify(days));
+  sSet(LS_LESSONS, JSON.stringify(lessons));
+  sSet(LS_LOGS, JSON.stringify(logs.slice(0, MAX_LOGS)));
+}
+
+/* 合併策略：天數與次數取較大值；紀錄聯集去重後取最新 60 筆 */
+function mergeDays(a, b) {
+  const out = { ...a };
+  for (const k in b) out[k] = Math.max(out[k] || 0, b[k]);
+  return out;
+}
+function mergeLessons(a, b) {
+  const out = { ...a };
+  for (const k in b) {
+    const x = out[k] || { count: 0, last: 0 };
+    const y = b[k];
+    out[k] = { count: Math.max(x.count || 0, y.count || 0), last: Math.max(x.last || 0, y.last || 0) };
+  }
+  return out;
+}
+function mergeLogs(a, b) {
+  const seen = new Set();
+  return [...a, ...b]
+    .filter(l => { const k = l.id + "@" + l.ts; if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((x, y) => y.ts - x.ts)
+    .slice(0, MAX_LOGS);
+}
+
+async function pullCloud() {
+  if (!db || !syncCode || syncCode.length < 6) return;
+  try {
+    const snap = await fbGetDoc(fbDoc(db, "shadowing", syncCode));
+    if (snap.exists()) {
+      const d = snap.data();
+      days    = mergeDays(days, d.days || {});
+      lessons = mergeLessons(lessons, d.lessons || {});
+      logs    = mergeLogs(logs, d.logs || []);
+      saveLocal();
+    }
+    cloudOk = true;
+  } catch (e) {
+    console.warn("雲端讀取失敗", e);
+    cloudOk = false;
+  }
+  renderAll();
+  renderSyncStatus();
+}
+
+async function pushCloud() {
+  if (!db || !syncCode || syncCode.length < 6) return;
+  try {
+    await fbSetDoc(fbDoc(db, "shadowing", syncCode), {
+      days, lessons, logs: logs.slice(0, MAX_LOGS),
+      updated: new Date().toISOString()
+    });
+    cloudOk = true;
+  } catch (e) {
+    console.warn("雲端寫入失敗", e);
+    cloudOk = false;
+  }
+  renderSyncStatus();
+}
+
+function recordStudy(lessonId) {
+  const now = Date.now();
+  const t = todayStr();
+  days[t] = (days[t] || 0) + 1;
+  const cur = lessons[lessonId] || { count: 0, last: 0 };
+  lessons[lessonId] = { count: cur.count + 1, last: now };
+  logs.unshift({ id: lessonId, ts: now });
+  logs = logs.slice(0, MAX_LOGS);
+  saveLocal();
+  renderAll();
+  return pushCloud();
+}
+
+/* ================= 熱圖（單月 + 前後箭頭） ================= */
+const now = new Date();
+let viewYear = now.getFullYear();
+let viewMonth = now.getMonth();
+
+function levelOf(count) {
+  if (!count) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  if (count <= 4) return 3;
+  return 4;
+}
+
+function renderHeatmap() {
+  document.getElementById("heatMonth").textContent = `${viewYear} 年 ${viewMonth + 1} 月`;
+  const grid = document.getElementById("heatGrid");
+  grid.innerHTML = "";
+
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const t = todayStr();
+
+  for (let i = 0; i < firstDow; i++) {
+    const c = document.createElement("div");
+    c.className = "heat-cell empty";
+    grid.appendChild(c);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const count = days[key] || 0;
+    const cell = document.createElement("div");
+    cell.className = "heat-cell" + (levelOf(count) ? " l" + levelOf(count) : "");
+    if (key === t) cell.classList.add("today");
+    cell.dataset.tip = count ? `${viewMonth+1}/${d}・學習 ${count} 次` : `${viewMonth+1}/${d}・無紀錄`;
+    grid.appendChild(cell);
+  }
+
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+  document.getElementById("heatNext").disabled = isCurrentMonth;
+}
+
+document.getElementById("heatPrev").addEventListener("click", () => {
+  viewMonth--;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  renderHeatmap();
+});
+document.getElementById("heatNext").addEventListener("click", () => {
+  viewMonth++;
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  renderHeatmap();
+});
+
+/* ================= 統計 ================= */
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function renderStats() {
+  /* 連續 / 累積天數 */
+  const totalDays = Object.keys(days).filter(k => days[k] > 0).length;
+  let streak = 0;
+  const d = new Date();
+  if (!days[todayStr()]) d.setDate(d.getDate() - 1);
+  while (true) {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    if (days[key] > 0) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  document.getElementById("statStreak").textContent = streak;
+  document.getElementById("statDays").textContent = totalDays;
+
+  /* 總次數 / 已學課程 / 章節條 / 卡片徽章 */
+  let total = 0, studied = 0;
+  const partTotals = { part1: 0, part2: 0, part3: 0 };
+
+  for (const id in lessonIndex) {
+    const info = lessons[id] || { count: 0, last: 0 };
+    const c = info.count || 0;
+    total += c;
+    if (c > 0) studied++;
+    partTotals[lessonIndex[id].partId] += c;
+
+    const badge = document.getElementById("badge-" + id);
+    const last = document.getElementById("last-" + id);
+    if (badge) {
+      if (c > 0) { badge.textContent = "×" + c; badge.classList.remove("zero"); }
+      else { badge.textContent = "未學習"; badge.classList.add("zero"); }
+    }
+    if (last) last.textContent = info.last ? "上次 " + fmtTime(info.last) : "";
+  }
+
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statLessons").textContent = studied + "/" + TOTAL_LESSONS;
+
+  const max = Math.max(1, partTotals.part1, partTotals.part2, partTotals.part3);
+  for (const p of parts) {
+    document.getElementById("bar-" + p.id).style.width = (partTotals[p.id] / max * 100) + "%";
+    document.getElementById("barcount-" + p.id).textContent = partTotals[p.id];
+    const studiedInPart = p.lessons.filter(l => (lessons["lesson" + l.n]?.count || 0) > 0).length;
+    document.getElementById("seccount-" + p.id).textContent = `已學 ${studiedInPart}/${p.lessons.length}`;
+  }
+
+  /* 最近學習 */
+  const list = document.getElementById("recentList");
+  const recent = logs.slice(0, 6);
+  list.innerHTML = recent.length
+    ? recent.map(l => `<div class="recent-item">
+        <span class="r-title">${pad(lessonIndex[l.id]?.n || 0)} ${lessonIndex[l.id]?.title || l.id}</span>
+        <span class="r-time">${fmtTime(l.ts)}</span></div>`).join("")
+    : '<div class="recent-empty">尚無學習紀錄</div>';
+}
+
+function renderAll() {
+  renderHeatmap();
+  renderStats();
+}
+
+/* ================= 同步碼 UI ================= */
+function renderSyncStatus() {
+  const el = document.getElementById("syncStatus");
+  const state = cloudOk
+    ? '<span class="ok">已連線</span>'
+    : '<span class="off">未連線（僅本機）</span>';
+  el.innerHTML = `目前同步碼：<strong>${syncCode}</strong><br>${state}`;
+}
+
+document.getElementById("syncApply").addEventListener("click", async () => {
+  const v = document.getElementById("syncInput").value.trim();
+  if (v.length < 6) {
+    alert("同步碼需要至少 6 個字");
+    return;
+  }
+  syncCode = v;
+  sSet(LS_CODE, syncCode);
+  document.getElementById("syncInput").value = "";
+  await pullCloud();
+  await pushCloud();
+});
+
+/* ================= 隨機學習 ================= */
+document.getElementById("randomBtn").addEventListener("click", () => {
+  const n = Math.floor(Math.random() * TOTAL_LESSONS) + 1;
+  recordStudy("lesson" + n);
+  setTimeout(() => { location.href = `./lesson${n}.html`; }, 200);
+});
+
+/* ================= 點卡片記錄後跳頁 ================= */
+document.querySelectorAll(".card").forEach(card => {
+  card.addEventListener("click", (e) => {
+    e.preventDefault();
+    const href = card.getAttribute("href");
+    recordStudy(card.dataset.lesson);
+    setTimeout(() => { location.href = href; }, 200);
+  });
+});
+
+/* ================= 初始化 ================= */
+renderAll();
+renderSyncStatus();
+initFirebase().then(ok => { if (ok) pullCloud(); });
+</script>
+
+<script>
+/* ---------- 側欄 / 主題 / 版面 ---------- */
+function lsGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch {}
+}
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const collapsed = sb.classList.toggle('collapsed');
+  lsSet('shadowing-sidebar', collapsed ? '0' : '1');
+}
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  document.getElementById('icon-moon').style.display = dark ? 'none' : '';
+  document.getElementById('icon-sun').style.display = dark ? '' : 'none';
+  lsSet('shadowing-dark', dark ? '1' : '0');
+}
+function toggleLayout() {
+  const grids = document.querySelectorAll('.grid');
+  if (!grids.length) return;
+  const isList = !grids[0].classList.contains('list-mode');
+  grids.forEach(g => g.classList.toggle('list-mode', isList));
+  document.getElementById('icon-list').style.display = isList ? '' : 'none';
+  document.getElementById('icon-grid').style.display = isList ? 'none' : '';
+  lsSet('shadowing-layout', isList ? 'list' : 'grid');
+}
+if (lsGet('shadowing-dark') === '1') {
+  document.body.classList.add('dark');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('icon-moon').style.display = 'none';
+    document.getElementById('icon-sun').style.display = '';
+  });
+}
+if (lsGet('shadowing-layout') === 'list') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.grid').forEach(g => g.classList.add('list-mode'));
+    document.getElementById('icon-list').style.display = '';
+    document.getElementById('icon-grid').style.display = 'none';
+  });
+}
+if (lsGet('shadowing-sidebar') === '1') {
+  document.getElementById('sidebar').classList.remove('collapsed');
+}
+</script>
+</body>
+</html>
