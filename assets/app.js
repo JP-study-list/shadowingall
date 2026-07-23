@@ -11,6 +11,7 @@ let lessonData = [];       // 目前這課的 data 陣列（從 JSON 載入）
 let speeds = {}, repeats = {}, textHidden = {}, chineseVisible = {}, furiganaVisible = {};
 let currentAudio = null, currentBtn = null, currentRow = null, playAllQueue = null;
 let isDark = false;
+let audioEl = null;        // 常駐的 <audio>，讓 iOS 認得這是同一個播放工作階段，背景/鎖定畫面才不會被中斷
 
 let bookmarks = JSON.parse(localStorage.getItem('shadowing-bookmarks') || '{}');
 
@@ -54,9 +55,90 @@ function toggleBookmark(id) {
   document.getElementById('bookmark-' + id).classList.toggle('marked', bookmarks[id]);
 }
 
-/* ================= 播放控制 ================= */
+/* ================= 播放控制 =================
+   用同一個常駐 <audio> 元素（不再每次 new Audio()），搭配 Media Session API：
+   iOS 只有在認定「這是持續中的背景音訊」時才不會把分頁的 JS 一起凍結，
+   這也讓鎖定畫面／控制中心會出現可操作的「現在播放」卡片。 */
+function ensureAudioEl() {
+  if (audioEl) return audioEl;
+  audioEl = document.createElement('audio');
+  audioEl.preload = 'auto';
+  audioEl.style.display = 'none';
+  document.body.appendChild(audioEl);
+
+  audioEl.addEventListener('play', () => {
+    if (currentBtn) { currentBtn.innerHTML = PAUSE_ICON; currentBtn.classList.add('playing'); }
+    if (currentRow) currentRow.classList.add('is-playing');
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+  });
+  audioEl.addEventListener('pause', () => {
+    if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); }
+    if (currentRow) currentRow.classList.remove('is-playing');
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  });
+  audioEl.addEventListener('ended', onTrackEnded);
+
+  return audioEl;
+}
+
+function updateMediaSessionMetadata(lesson, uttIndex) {
+  if (!('mediaSession' in navigator)) return;
+  const utt = lesson.utterances[uttIndex];
+  const lessonTitleEl = document.getElementById('lessonTitle');
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: utt.text,
+    artist: lesson.id + (lessonTitleEl && lessonTitleEl.textContent ? '・' + lessonTitleEl.textContent : ''),
+    album: 'Shadowing'
+  });
+}
+
+function setupMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.setActionHandler('play', () => { if (currentAudio) currentAudio.play(); });
+  navigator.mediaSession.setActionHandler('pause', () => { if (currentAudio) currentAudio.pause(); });
+  navigator.mediaSession.setActionHandler('previoustrack', () => stepTrack(-1));
+  navigator.mediaSession.setActionHandler('nexttrack', () => stepTrack(1));
+}
+
+function stepTrack(delta) {
+  if (!currentAudio) return;
+  const lessonId = currentAudio._lessonId;
+  const uttIndex = currentAudio._uttIndex;
+  const lesson = lessonData.find(l => l.id === lessonId);
+  if (!lesson) return;
+  const nextIndex = uttIndex + delta;
+  if (nextIndex < 0 || nextIndex >= lesson.utterances.length) return;
+  playAudio(lessonId, nextIndex, false);
+}
+
+function onTrackEnded() {
+  const lessonId = audioEl._lessonId;
+  const uttIndex = audioEl._uttIndex;
+  const lesson = lessonData.find(l => l.id === lessonId);
+
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); }
+  if (currentRow) currentRow.classList.remove('is-playing');
+  currentAudio = null; currentBtn = null; currentRow = null;
+
+  if (playAllQueue && playAllQueue.lessonId === lessonId) {
+    const nextIndex = uttIndex + 1;
+    if (lesson && nextIndex < lesson.utterances.length) {
+      playAllQueue.index = nextIndex;
+      setTimeout(() => playAudio(lessonId, nextIndex, true), 300);
+    } else {
+      const allBtn = document.getElementById('playall-' + lessonId);
+      if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+      playAllQueue = null;
+      if (repeats[lessonId]) setTimeout(() => playAll(lessonId), 400);
+    }
+  } else if (repeats[lessonId] && !playAllQueue) {
+    playAudio(lessonId, uttIndex, false);
+  }
+}
+
 function stopAll() {
-  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  const audio = ensureAudioEl();
+  if (currentAudio) { audio.pause(); currentAudio = null; }
   if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
   if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
   if (playAllQueue) {
@@ -70,9 +152,10 @@ function playAudio(lessonId, uttIndex, fromPlayAll) {
   const lesson = lessonData.find(l => l.id === lessonId);
   const btn = document.getElementById('btn-' + lessonId + '-' + uttIndex);
   const row = document.getElementById('utt-' + lessonId + '-' + uttIndex);
-  const isSame = currentAudio && currentAudio._lessonId === lessonId && currentAudio._uttIndex === uttIndex;
+  const audio = ensureAudioEl();
+  const isSame = currentAudio && audio._lessonId === lessonId && audio._uttIndex === uttIndex;
 
-  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentAudio) { audio.pause(); currentAudio = null; }
   if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
   if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
   if (!fromPlayAll && playAllQueue) {
@@ -83,7 +166,7 @@ function playAudio(lessonId, uttIndex, fromPlayAll) {
 
   if (isSame && !fromPlayAll) return;
 
-  const audio = new Audio(lesson.utterances[uttIndex].audio);
+  audio.src = lesson.utterances[uttIndex].audio;
   audio.playbackRate = speeds[lessonId];
   audio._lessonId = lessonId;
   audio._uttIndex = uttIndex;
@@ -93,28 +176,8 @@ function playAudio(lessonId, uttIndex, fromPlayAll) {
   row.classList.add('is-playing');
   currentAudio = audio; currentBtn = btn; currentRow = row;
 
+  updateMediaSessionMetadata(lesson, uttIndex);
   audio.play().catch(e => console.error('Play failed:', e));
-
-  audio.onended = () => {
-    btn.innerHTML = PLAY_ICON; btn.classList.remove('playing');
-    row.classList.remove('is-playing');
-    currentAudio = null; currentBtn = null; currentRow = null;
-
-    if (playAllQueue && playAllQueue.lessonId === lessonId) {
-      const nextIndex = uttIndex + 1;
-      if (nextIndex < lesson.utterances.length) {
-        playAllQueue.index = nextIndex;
-        setTimeout(() => playAudio(lessonId, nextIndex, true), 300);
-      } else {
-        const allBtn = document.getElementById('playall-' + lessonId);
-        if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
-        playAllQueue = null;
-        if (repeats[lessonId]) setTimeout(() => playAll(lessonId), 400);
-      }
-    } else if (repeats[lessonId] && !playAllQueue) {
-      playAudio(lessonId, uttIndex, false);
-    }
-  };
 }
 
 function playAll(lessonId) {
@@ -265,6 +328,7 @@ function buildUI() {
 /* ================= 頁面初始化：讀取 ?id= 對應的 JSON ================= */
 async function initLesson() {
   applyTheme(localStorage.getItem('shadowing-dark') === '1');
+  setupMediaSession();
 
   const params = new URLSearchParams(location.search);
   const num = parseInt(params.get('id'), 10) || 1;
