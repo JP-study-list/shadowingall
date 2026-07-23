@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowing Practice</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <span class="site-title" id="siteTitle">Shadowing</span>
+    <span style="font-size:0.72rem;color:var(--muted);font-family:'Noto Sans JP',sans-serif;" id="lessonTitle"></span>
+  </div>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="切換深色模式">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+</header>
+
+<div class="lessons" id="lessons"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
