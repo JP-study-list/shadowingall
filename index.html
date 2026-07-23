@@ -441,12 +441,15 @@ parts.forEach(p => p.lessons.forEach(l => lessonIndex["lesson" + l.n] = { title:
 
 /* ================= 建立卡片 ================= */
 const pad = n => String(n).padStart(2, "0");
+/* 已搬到共用核心（lesson.html + data/lessonNN.json）的課程編號，其餘課程暫時還是連到舊的 lessonN.html */
+const MIGRATED_LESSONS = new Set([1]);
+const lessonHref = n => MIGRATED_LESSONS.has(n) ? `./lesson.html?id=${pad(n)}` : `./lesson${n}.html`;
 document.getElementById("sections").innerHTML = parts.map(p => `
   <div class="section">
     <div class="section-label"><span>${p.label}</span><span class="section-count" id="seccount-${p.id}"></span></div>
     <div class="grid">
       ${p.lessons.map(l => `
-        <a class="card" href="./lesson${l.n}.html" data-lesson="lesson${l.n}">
+        <a class="card" href="${lessonHref(l.n)}" data-lesson="lesson${l.n}">
           <div class="card-top">
             <span class="card-num">${pad(l.n)}</span>
             <span class="count-badge zero" id="badge-lesson${l.n}">未學習</span>
@@ -719,7 +722,7 @@ document.getElementById("syncApply").addEventListener("click", async () => {
 document.getElementById("randomBtn").addEventListener("click", () => {
   const n = Math.floor(Math.random() * TOTAL_LESSONS) + 1;
   recordStudy("lesson" + n);
-  setTimeout(() => { location.href = `./lesson${n}.html`; }, 200);
+  setTimeout(() => { location.href = lessonHref(n); }, 200);
 });
 
 /* ================= 點卡片記錄後跳頁 ================= */
