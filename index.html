@@ -2,8 +2,12 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>日文 Shadowing 跟讀練習</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日文 Shadowing">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -35,7 +39,7 @@
     width: 264px; flex-shrink: 0;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 20px 16px 30px;
+    padding: calc(20px + env(safe-area-inset-top)) 16px 30px;
     transition: margin-left .25s ease;
     position: sticky; top: 0; height: 100vh;
     overflow-y: auto;
@@ -164,7 +168,7 @@
   .sync-hint { font-size: 10px; color: var(--text3); margin-top: 8px; line-height: 1.6; }
 
   /* ---------- Main ---------- */
-  .main-area { flex: 1; padding: 40px 20px 60px; min-width: 0; }
+  .main-area { flex: 1; padding: calc(40px + env(safe-area-inset-top)) 20px 60px; min-width: 0; }
   .container { max-width: 760px; margin: 0 auto; }
   header { text-align: center; margin-bottom: 36px; position: relative; }
   header h1 { font-weight: 700; font-size: clamp(28px, 6vw, 42px); letter-spacing: 0.02em; }
